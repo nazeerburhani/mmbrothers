@@ -2119,4 +2119,63 @@ body.dark-mode input, body.dark-mode select, body.dark-mode textarea { backgroun
 
     /* Reminder dropdown fits */
     #reminder-dropdown { width: calc(100vw - 3rem) !important; right: -60px !important; }
+
+    /* Content padding */
+    .content-area { padding: 1rem !important; }
+    #content-area:has(.pos-layout) { padding: 0.75rem !important; height: auto; min-height: calc(100dvh - 70px); }
+
+    /* Header: compact on mobile */
+    .header-left { gap: 0.75rem; }
+    .user-info { display: none; }
+    .avatar { width: 36px; height: 36px; font-size: 1rem; }
+
+    /* Login */
+    .login-box { width: calc(100vw - 2.5rem) !important; max-width: 400px; padding: 2rem 1.5rem; }
+
+    /* POS products: smaller cards for phones */
+    .products-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 0.6rem; }
+    .product-card { padding: 0.6rem; max-width: none; }
+    .product-img { height: 70px; }
+    .product-name { font-size: 0.85rem; }
+    .product-price { font-size: 1rem; }
+    .cart-pane { border-radius: 12px; }
+
+    /* Stat cards */
+    .stat-card { padding: 1.1rem; }
+    .stat-card .value { font-size: 1.6rem; }
+    .stat-card h3 { font-size: 0.8rem; }
+
+    /* Dashboard main stacks */
+    .dashboard-main { grid-template-columns: 1fr !important; }
+
+    /* Forms */
+    .form-control, input[type="text"], input[type="number"], input[type="password"], input[type="email"], select, textarea {
+        font-size: 16px !important; /* prevents iOS zoom */
+        max-width: 100%;
+    }
+
+    /* Buttons: full width on small screens for key actions */
+    .btn { min-height: 44px; } /* touch target */
+
+    /* Tables: smaller text */
+    .table-wrap table { font-size: 0.85rem; }
+    th, td { padding: 0.6rem 0.5rem !important; }
+
+    /* Onboarding: fit phones */
+    .ob-card { padding: 1.25rem 1rem !important; margin: 0.5rem; }
+    .ob-grid { grid-template-columns: 1fr 1fr !important; gap: 0.6rem; }
+
+    /* Receipt modal */
+    #receipt-modal .modal-content { padding: 1rem !important; }
+}
+
+/* Extra-small phones */
+@media (max-width: 480px) {
+    .top-header { padding: 0.7rem 0.75rem; }
+    .top-header h1 { font-size: 1rem; }
+    #page-title { max-width: 45vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .content-area { padding: 0.75rem !important; }
+    .products-grid { grid-template-columns: repeat(2, 1fr); }
+    .stats-grid { gap: 0.75rem; }
+    .ob-grid { grid-template-columns: 1fr !important; }
 }
