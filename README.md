@@ -45,12 +45,16 @@ This system uses a lightweight, fast stack: **Node.js, Express, and SQLite** for
 
 ## 🚀 How to Run Locally
 
-1. Start the server:
+1. Start the desktop app:
    ```bash
    npm start
+   ```
+   Or start just the web backend (API + static frontend):
+   ```bash
+   npm run server
    ```
 2. You will see a message: `Server is running on http://localhost:3000`
 3. Open your web browser (Chrome, Edge, Firefox) and go to:
    **[http://localhost:3000](http://localhost:3000)**
 
-*Note: On the first run, the system will automatically create `database.sqlite` and seed it with sample Islamic retail products so you can start testing the POS immediately.*
+*Note: On the first run, the system will automatically create `database.sqlite`. The desktop/Electron app stores its data in the same database file via the built-in backend.*
