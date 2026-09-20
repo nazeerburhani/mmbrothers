@@ -28,6 +28,16 @@ function getInitialData() {
         customers: [
             { id: 1, name: "Walk-in Customer", phone: "N/A", address: "" }
         ],
+        categories: [
+            { id: 1, name: "Attar" },
+            { id: 2, name: "Caps" },
+            { id: 3, name: "Kashmiri Shawl" },
+            { id: 4, name: "Tasbeeh" },
+            { id: 5, name: "Miswak" },
+            { id: 6, name: "Prayer Mat" },
+            { id: 7, name: "Islamic Books" },
+            { id: 8, name: "General" }
+        ],
         salesHistory: [],
         attarProducts: [],
         bottles: [],
@@ -47,6 +57,7 @@ function getDB() {
             const data = localStorage.getItem('mm_brothers_data'); 
             parsed = data ? JSON.parse(data) : (mockDB || getInitialData());
         }
+        parsed = normalizeDB(parsed);
         // Auto-migrate old JazakAllahu footer to correct text
         if (parsed && parsed.settings && parsed.settings.receipt_footer && 
             parsed.settings.receipt_footer.toLowerCase().includes('jazak')) {
@@ -55,6 +66,15 @@ function getDB() {
         }
         return parsed;
     } catch(err) { return mockDB || getInitialData(); } 
+}
+// Fill in any collections missing from older saved databases so views never crash on undefined arrays
+function normalizeDB(parsed) {
+    if (!parsed || typeof parsed !== 'object') return getInitialData();
+    const defaults = getInitialData();
+    for (const key of Object.keys(defaults)) {
+        if (parsed[key] === undefined || parsed[key] === null) parsed[key] = defaults[key];
+    }
+    return parsed;
 }
 function saveDB(data) { try { if (window.api) { window.api.writeDB('mm_brothers_data', JSON.stringify(data)); } else { localStorage.setItem('mm_brothers_data', JSON.stringify(data)); } } catch(err) { console.error('Failed to save to SQLite', err); } }
 
@@ -318,7 +338,7 @@ window.showAlert = function(title, message, icon = "ℹ️") {
 // --- DATA FETCHERS ---
 function fetchProducts() { state.products = getDB().products; }
 function fetchCustomers() { state.customers = getDB().customers; }
-function fetchSalesHistory() { state.salesHistory = getDB().salesHistory.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); }
+function fetchSalesHistory() { state.salesHistory = (getDB().salesHistory || []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); }
 function fetchCategories() { state.categories = getDB().categories || []; }
 function fetchExpenses() { state.expenses = getDB().expenses || []; }
 function fetchWorkers() { state.workers = getDB().workers || []; }
@@ -387,7 +407,7 @@ async function loadView(view) {
 function fetchStats() {
     const db = getDB();
     const now = new Date();
-    let filteredSales = db.salesHistory.filter(sale => {
+    let filteredSales = (db.salesHistory || []).filter(sale => {
         const saleDate = new Date(sale.created_at);
         if (state.timeFilter === 'all') return true;
         if (state.timeFilter === 'today') return saleDate.toDateString() === now.toDateString();
@@ -1399,7 +1419,7 @@ window.renderCheckoutReview = function() {
         customerObj = state.customers.find(c => c.id === customerId);
     }
 
-    const payMethod = document.getElementById('payment-method').value;
+    const payMethod = document.getElementById('payment-method')?.value || 'Cash';
     const total = state.cart.reduce((s, i) => s + (i.price * i.quantity), 0);
 
     const totalSavings = state.cart.reduce((s, item) => {
@@ -1475,7 +1495,7 @@ window.confirmCheckout = function() {
     const customerSelect = document.getElementById('cart-customer-select');
     const customerId = customerSelect ? parseInt(customerSelect.value) : 1;
 
-    const payMethod = document.getElementById('payment-method').value;
+    const payMethod = document.getElementById('payment-method')?.value || 'Cash';
     const db = getDB();
     let totAmt = 0, totProf = 0;
 
@@ -1489,7 +1509,7 @@ window.confirmCheckout = function() {
     const saleRecord = {
         id: Date.now(), customer_id: customerId, payment_method: payMethod,
         total_amount: totAmt, profit: totProf, created_at: new Date().toISOString(), items: [...state.cart],
-        salesman_id: parseInt(document.getElementById('cart-salesman-select').value)
+        salesman_id: parseInt(document.getElementById('cart-salesman-select')?.value || state.currentUser.id)
     };
 
     db.salesHistory.push(saleRecord);
