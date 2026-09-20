@@ -1,87 +1,277 @@
-// --- LOCAL STORAGE DATABASE SETUP ---
+// === MULTI-TENANT STORAGE CORE (v2) ===
+// The platform is white-label: every business is an isolated tenant.
+// Storage holds: { version: 2, activeBusinessId, businesses: [...] }
+// A business: { id, name, type, created_at, settings, users, data: { ...collections } }
+// getDB()/saveDB() keep their names but operate on the ACTIVE tenant's view,
+// so every existing call site keeps working unchanged against the current business.
 const DB_KEY = 'mm_brothers_data';
 let mockDB = null;
 
-function getInitialData() {
+// Collections isolated per business tenant
+const TENANT_COLLECTIONS = ['products','customers','salesHistory','categories','expenses','workers','attarProducts','bottles','khataRecords','khataAdvance','khataAdvanceHistory','suppliers','purchases','audit','notifications','customFields'];
+
+function emptyTenantData() {
+    const d = {};
+    for (const k of TENANT_COLLECTIONS) {
+        if (k === 'khataAdvance') d[k] = {};
+        else if (k === 'customFields') d[k] = { products: [], customers: [], suppliers: [], employees: [], orders: [] };
+        else d[k] = [];
+    }
+    return d;
+}
+
+function defaultTheme() {
     return {
-        settings: {
-            store_name: "MM Brothers Islamic Mart",
-            store_contact: "03025731705",
-            store_address: "Main Bazaar, City Center",
-            receipt_footer: "Thanks for shopping with us! Please check items before leaving.",
-            currency: "Rs",
-            official_number: "03025731705",
-            logo_base64: "logo.jpg",
-            financial_password: null,
-            printer_settings: {
-                printer_name: "",
-                paper_size: "80mm",
-                silent_print: true
-            }
-        },
-        users: [
-            { id: 1, username: "admin", password: "123", role: "admin", name: "Admin User", phone: "03025731705", avatar: "" },
-            { id: 2, username: "manager", password: "123", role: "manager", name: "Store Manager", phone: "0333-1111111", avatar: "" },
-            { id: 3, username: "sales", password: "123", role: "salesman", name: "Sales Team", phone: "0333-2222222", avatar: "" }
-        ],
-        products: [],
-        customers: [
-            { id: 1, name: "Walk-in Customer", phone: "N/A", address: "" }
-        ],
-        categories: [
-            { id: 1, name: "Attar" },
-            { id: 2, name: "Caps" },
-            { id: 3, name: "Kashmiri Shawl" },
-            { id: 4, name: "Tasbeeh" },
-            { id: 5, name: "Miswak" },
-            { id: 6, name: "Prayer Mat" },
-            { id: 7, name: "Islamic Books" },
-            { id: 8, name: "General" }
-        ],
-        salesHistory: [],
-        attarProducts: [],
-        bottles: [],
-        khataRecords: []
+        primary: '#1d4ed8', secondary: '#1e3a8a', accent: '#f59e0b',
+        background: '#f1f5f9', surface: '#ffffff', text: '#0f172a', muted: '#64748b',
+        border: '#e2e8f0', button: '#1d4ed8', buttonText: '#ffffff',
+        card: '#ffffff', header: '#1d4ed8', sidebar: '#1e293b',
+        tableHeader: '#f8fafc', invoice: '#1d4ed8', receipt: '#ffffff',
+        radius: 'rounded', darkMode: 'system', font: 'system'
     };
 }
 
-function initDB() { /* DB is initialized by main.js in Electron */ }
+function defaultBusinessSettings(name) {
+    return {
+        store_name: name || 'My Business',
+        tagline: '', description: '',
+        phone: '', whatsapp: '', email: '', website: '',
+        address: '', city: '', country: '', tax_number: '',
+        currency: 'Rs', business_type: 'General Store',
+        receipt_footer: 'Thanks for shopping with us! Please check items before leaving.',
+        logo_base64: '', favicon_base64: '',
+        tax_rate: 0, invoice_prefix: 'INV-', invoice_seq: 1001,
+        theme: defaultTheme(),
+        modules: { dashboard: true, pos: true, inventory: true, suppliers: true, customers: true, khata: true, expenses: true, reports: true, financials: true, notes: true, audit: true, settings: true },
+        notifications: { low_stock: true, out_of_stock: true, expiry: true, khata: true },
+        financial_password: null,
+        printer_settings: { printer_name: '', paper_size: '80mm', silent_print: true }
+    };
+}
 
-function getDB() { 
-    try { 
-        let parsed;
-        if (window.api) { 
-            const data = window.api.readDB('mm_brothers_data'); 
-            parsed = data ? JSON.parse(data) : getInitialData(); 
-        } else {
-            const data = localStorage.getItem('mm_brothers_data'); 
-            parsed = data ? JSON.parse(data) : (mockDB || getInitialData());
-        }
-        parsed = normalizeDB(parsed);
-        // Auto-migrate old JazakAllahu footer to correct text
-        if (parsed && parsed.settings && parsed.settings.receipt_footer && 
-            parsed.settings.receipt_footer.toLowerCase().includes('jazak')) {
-            parsed.settings.receipt_footer = "Thanks for shopping with us!\nPlease check your items before leaving.";
-            saveDB(parsed);
-        }
-        return parsed;
-    } catch(err) { return mockDB || getInitialData(); } 
+// Role normalization: legacy role names map to the current role set
+const ROLE_MAP = { owner: 'owner', admin: 'admin', manager: 'manager', salesman: 'salesperson', salesperson: 'salesperson', cashier: 'cashier', accountant: 'accountant', inventory: 'inventory', staff: 'staff' };
+function normalizeUser(u) {
+    u = Object.assign({ id: 'u_' + Math.random().toString(36).slice(2, 10), name: '', username: '', password: '', role: 'staff', phone: '', avatar: '' }, u || {});
+    u.role = ROLE_MAP[u.role] || 'staff';
+    return u;
 }
-// Fill in any collections missing from older saved databases so views never crash on undefined arrays
-function normalizeDB(parsed) {
-    if (!parsed || typeof parsed !== 'object') return getInitialData();
-    const defaults = getInitialData();
-    for (const key of Object.keys(defaults)) {
-        if (parsed[key] === undefined || parsed[key] === null) parsed[key] = defaults[key];
+
+function makeBusiness(name, opts) {
+    opts = opts || {};
+    const b = {
+        id: 'biz_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+        name: name || 'My Business',
+        type: (opts && opts.type) || 'General Store',
+        created_at: new Date().toISOString(),
+        settings: defaultBusinessSettings(name),
+        users: [],
+        data: emptyTenantData()
+    };
+    if (opts.settings) Object.assign(b.settings, opts.settings);
+    if (opts.theme) Object.assign(b.settings.theme, opts.theme);
+    if (opts.users) b.users = opts.users.map(normalizeUser);
+    return b;
+}
+
+function normalizeTenantData(data) {
+    const out = emptyTenantData();
+    if (!data || typeof data !== 'object') return out;
+    for (const k of TENANT_COLLECTIONS) {
+        if (k === 'khataAdvance') {
+            if (data[k] && typeof data[k] === 'object' && !Array.isArray(data[k])) out[k] = data[k];
+        } else if (k === 'customFields') {
+            if (data[k] && typeof data[k] === 'object') out[k] = Object.assign(out[k], data[k]);
+        } else if (Array.isArray(data[k])) {
+            out[k] = data[k];
+        }
     }
-    return parsed;
+    return out;
 }
-function saveDB(data) { try { if (window.api) { window.api.writeDB('mm_brothers_data', JSON.stringify(data)); } else { localStorage.setItem('mm_brothers_data', JSON.stringify(data)); } } catch(err) { console.error('Failed to save to SQLite', err); } }
+
+// Migrate any stored payload to v2. Returns { raw, changed }.
+function migrateRaw(raw) {
+    if (raw && raw.version === 2 && Array.isArray(raw.businesses)) {
+        let changed = false;
+        for (const b of raw.businesses) {
+            if (!b.id) { b.id = 'biz_' + Math.random().toString(36).slice(2, 10); changed = true; }
+            const fresh = defaultBusinessSettings(b.name);
+            b.settings = Object.assign(fresh, b.settings || {});
+            b.settings.theme = Object.assign(defaultTheme(), (b.settings && b.settings.theme) || {});
+            b.settings.modules = Object.assign(fresh.modules, (b.settings && b.settings.modules) || {});
+            b.settings.notifications = Object.assign(fresh.notifications, (b.settings && b.settings.notifications) || {});
+            b.users = (b.users || []).map(normalizeUser);
+            const nd = normalizeTenantData(b.data);
+            // Absorb any legacy top-level collections that predate b.data
+            for (const k of TENANT_COLLECTIONS) {
+                const isEmpty = (k === 'khataAdvance' || k === 'customFields') ? false : nd[k].length === 0;
+                if (isEmpty && Array.isArray(b[k]) && b[k].length) { nd[k] = b[k]; changed = true; }
+                if (b[k] !== undefined && TENANT_COLLECTIONS.includes(k)) delete b[k];
+            }
+            b.data = nd;
+        }
+        if (!raw.activeBusinessId || !raw.businesses.some(b => b.id === raw.activeBusinessId)) {
+            raw.activeBusinessId = raw.businesses.length ? raw.businesses[0].id : null;
+            changed = true;
+        }
+        return { raw, changed };
+    }
+    // Legacy flat v1 database -> wrap into a single tenant, preserving its look
+    const parsed = (raw && typeof raw === 'object') ? raw : {};
+    const name = (parsed.settings && parsed.settings.store_name) || 'My Business';
+    const b = makeBusiness(name);
+    // Migrated businesses keep the classic red/gold appearance they had
+    Object.assign(b.settings.theme, { primary: '#A90011', secondary: '#7A000C', accent: '#D4AF37', button: '#A90011', header: '#A90011', invoice: '#A90011' });
+    if (parsed.settings) {
+        const keep = Object.assign({}, parsed.settings);
+        delete keep.theme;
+        Object.assign(b.settings, keep);
+    }
+    if (b.settings.receipt_footer && b.settings.receipt_footer.toLowerCase().includes('jazak')) {
+        b.settings.receipt_footer = "Thanks for shopping with us!\nPlease check your items before leaving.";
+    }
+    b.users = (parsed.users || []).map(normalizeUser);
+    b.data = normalizeTenantData(parsed);
+    return { raw: { version: 2, activeBusinessId: b.id, businesses: [b] }, changed: true };
+}
+
+function readRawDB() {
+    try {
+        let raw = null;
+        if (window.api) {
+            const d = window.api.readDB(DB_KEY);
+            raw = d ? JSON.parse(d) : null;
+        } else {
+            const d = localStorage.getItem(DB_KEY);
+            raw = d ? JSON.parse(d) : (mockDB ? JSON.parse(JSON.stringify(mockDB)) : null);
+        }
+        if (!raw) return { raw: null, fresh: true };
+        const m = migrateRaw(raw);
+        if (m.changed) writeRawDB(m.raw);
+        return { raw: m.raw, fresh: false };
+    } catch (err) {
+        console.error('DB read failed', err);
+        return { raw: null, fresh: true, error: true };
+    }
+}
+
+function writeRawDB(raw) {
+    try {
+        const s = JSON.stringify(raw);
+        if (window.api) window.api.writeDB(DB_KEY, s);
+        else localStorage.setItem(DB_KEY, s);
+    } catch (err) { console.error('Failed to save DB', err); }
+}
+
+function initDB() { /* storage is initialized lazily by readRawDB */ }
+
+// Active-tenant view: every call site keeps working, now scoped to the current business.
+function getDB() {
+    const rr = readRawDB();
+    if (!rr.raw || !rr.raw.businesses.length) {
+        const fb = getInitialData();
+        fb._raw = null; fb._tenantId = null; fb._tenant = null;
+        fb._fresh = true; fb.businesses = []; fb.activeBusinessId = null;
+        return fb;
+    }
+    const raw = rr.raw;
+    const t = raw.businesses.find(b => b.id === raw.activeBusinessId) || raw.businesses[0];
+    const view = { _raw: raw, _tenantId: t.id, _tenant: t, _fresh: !!rr.fresh, businesses: raw.businesses, activeBusinessId: raw.activeBusinessId };
+    for (const k of TENANT_COLLECTIONS) view[k] = t.data[k];
+    view.settings = t.settings;
+    view.users = t.users;
+    return view;
+}
+
+function saveDB(view) {
+    if (!view) return;
+    const raw = view._raw || readRawDB().raw;
+    if (!raw || !raw.businesses.length) return;
+    const t = raw.businesses.find(b => b.id === (view._tenantId || raw.activeBusinessId)) || raw.businesses[0];
+    if (!t) return;
+    if (view.settings) t.settings = view.settings;
+    if (view.users) t.users = view.users;
+    t.data = t.data || {};
+    for (const k of TENANT_COLLECTIONS) if (view[k] !== undefined) t.data[k] = view[k];
+    writeRawDB(raw);
+}
+
+// Legacy flat shape (generic, no hard-coded branding) for old fallback call sites
+function getInitialData() {
+    const b = makeBusiness('My Business');
+    return Object.assign({ settings: b.settings, users: b.users }, b.data);
+}
+
+// --- Tenant helpers ---
+function getBusinesses() { const rr = readRawDB(); return rr.raw ? rr.raw.businesses : []; }
+function getActiveBusiness() {
+    const rr = readRawDB();
+    if (!rr.raw || !rr.raw.businesses.length) return null;
+    return rr.raw.businesses.find(b => b.id === rr.raw.activeBusinessId) || rr.raw.businesses[0];
+}
+function activeBusiness() { return getActiveBusiness(); }
+function setActiveBusinessId(id) {
+    const rr = readRawDB();
+    if (!rr.raw) return false;
+    if (rr.raw.businesses.some(b => b.id === id)) { rr.raw.activeBusinessId = id; writeRawDB(rr.raw); return true; }
+    return false;
+}
+function deleteBusiness(id) {
+    const rr = readRawDB();
+    if (!rr.raw || rr.raw.businesses.length <= 1) return false;
+    rr.raw.businesses = rr.raw.businesses.filter(b => b.id !== id);
+    if (rr.raw.activeBusinessId === id) rr.raw.activeBusinessId = rr.raw.businesses[0].id;
+    writeRawDB(rr.raw);
+    return true;
+}
+function switchBusiness(id) {
+    if (setActiveBusinessId(id)) location.reload();
+}
+
+function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// Load the active tenant's collections into the global state object
+function loadTenantIntoState(db) {
+    state.settings = db.settings || defaultBusinessSettings('My Business');
+    state.products = db.products || [];
+    state.customers = db.customers || [];
+    state.salesHistory = db.salesHistory || [];
+    state.categories = db.categories || [];
+    state.expenses = db.expenses || [];
+    state.workers = db.workers || [];
+    state.attarProducts = db.attarProducts || [];
+    state.bottles = db.bottles || [];
+    state.khataRecords = db.khataRecords || [];
+    state.suppliers = db.suppliers || [];
+    state.purchases = db.purchases || [];
+    state.audit = db.audit || [];
+    state.notifications = db.notifications || [];
+    state.customFields = db.customFields || { products: [], customers: [], suppliers: [], employees: [], orders: [] };
+}
+
+// Business switcher injected at the bottom of the sidebar
+function renderBusinessSwitcher() {
+    const aside = document.querySelector('.sidebar');
+    if (!aside) return;
+    let wrap = document.getElementById('business-switcher');
+    if (!wrap) { wrap = document.createElement('div'); wrap.id = 'business-switcher'; aside.appendChild(wrap); }
+    const businesses = getBusinesses();
+    const active = getActiveBusiness();
+    if (businesses.length <= 1) { wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
+    wrap.style.display = '';
+    const opts = businesses.map(b => `<option value="${b.id}"${b.id === (active && active.id) ? ' selected' : ''}>${escapeHtml(b.name)}</option>`).join('');
+    wrap.innerHTML = `<div class="bs-inner"><label class="bs-label">Business</label><select id="bs-select" class="bs-select">${opts}</select></div>`;
+    const sel = document.getElementById('bs-select');
+    if (sel) sel.addEventListener('change', e => switchBusiness(e.target.value));
+}
 
 // Global State
 let state = {
     products: [], customers: [], salesHistory: [], cart: [], stats: {}, categories: [], expenses: [], workers: [],
     attarProducts: [], bottles: [], khataRecords: [],
+    suppliers: [], purchases: [], audit: [], notifications: [], customFields: null,
     timeFilter: 'all', inventorySort: 'name', inventoryFilter: 'all',
     currentUser: null,
     settings: {},
@@ -161,42 +351,32 @@ window.getKhataPaymentInfo = function(sale, passedDB = null) {
 
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
-    initDB(); 
-    
-    // Auto-login as Admin since anyone with the file should have access
-    const db = getDB();
-    if (!db.users || !Array.isArray(db.users)) db.users = getInitialData().users;
-    if (!db.settings) db.settings = getInitialData().settings;
+    initDB();
 
-    // Auto-update Admin contact if it's the old default
-    const adminUser = db.users.find(u => u.username === 'admin');
-    if (adminUser && adminUser.phone === '0300-0000000') {
-        adminUser.phone = '03025731705';
+    let db = getDB();
+    if (db._fresh) {
+        // First run: provision a default business so the app boots.
+        // (The onboarding wizard takes over this path in the next milestone.)
+        const raw = { version: 2, businesses: [], activeBusinessId: null };
+        const b = makeBusiness('My Business');
+        b.users = [normalizeUser({ username: 'admin', password: '123', role: 'admin', name: 'Admin User' })];
+        b.data.categories = [{ id: 1, name: 'General' }];
+        b.data.customers = [{ id: 1, name: 'Walk-in Customer', phone: 'N/A', address: '' }];
+        raw.businesses.push(b);
+        raw.activeBusinessId = b.id;
+        writeRawDB(raw);
+        db = getDB();
+    }
+    if (!db.users || !db.users.length) {
+        db.users = [normalizeUser({ username: 'admin', password: '123', role: 'admin', name: 'Admin User' })];
         saveDB(db);
     }
-    
-    // Self-Correction: Fix the contact number typo (0303 -> 0302)
-    if (db.settings.official_number === '03035731705' || db.settings.store_contact === '03035731705') {
-        db.settings.official_number = '03025731705';
-        db.settings.store_contact = '03025731705';
-        saveDB(db);
-    }
-    
-    state.currentUser = db.users.find(u => u.role === 'admin') || db.users[0];
-    state.settings = db.settings;
-    
-    // Ensure state arrays are populated on load
-    state.products = db.products || [];
-    state.customers = db.customers || [];
-    state.salesHistory = db.salesHistory || [];
-    state.categories = db.categories || [];
-    state.expenses = db.expenses || [];
-    state.workers = db.workers || [];
-    state.attarProducts = db.attarProducts || [];
-    state.bottles = db.bottles || getInitialData().bottles;
-    state.khataRecords = db.khataRecords || [];
+
+    state.currentUser = db.users.find(u => u.role === 'admin') || db.users.find(u => u.role === 'owner') || db.users[0] || normalizeUser({ username: 'admin', password: '123', role: 'admin', name: 'Admin User' });
+    loadTenantIntoState(db);
 
     applyGlobalSettings();
+    renderBusinessSwitcher();
     setupNavigation();
 
     document.getElementById('sidebar-logo-upload')?.addEventListener('change', (e) => {

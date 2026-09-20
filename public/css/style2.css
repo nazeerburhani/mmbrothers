@@ -1934,3 +1934,10 @@ tr:hover td {
     }
 }
 
+
+/* === Business switcher (multi-tenant) === */
+#business-switcher { padding: 0.75rem 1rem 1rem; border-top: 1px solid rgba(255,255,255,0.08); margin-top: auto; }
+#business-switcher .bs-inner { display: flex; flex-direction: column; gap: 0.35rem; }
+#business-switcher .bs-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.55; color: #fff; }
+#business-switcher .bs-select { width: 100%; padding: 0.55rem 0.7rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.08); color: #fff; font-weight: 600; font-size: 0.85rem; }
+#business-switcher .bs-select option { color: #0f172a; }

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MM Brothers Islamic Mart</title>
+    <title>Business Manager</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,7 +22,7 @@
                     <img src="logo.jpg" alt="Logo" class="brand-logo-img global-logo-img" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'90\' height=\'90\'><rect width=\'90\' height=\'90\' fill=\'%23f1f5f9\'/><text x=\'45\' y=\'50\' font-size=\'24\' text-anchor=\'middle\' fill=\'%23cbd5e1\'>Logo</text></svg>'">
                 </label>
                 <input type="file" id="sidebar-logo-upload" accept="image/*" style="display:none;">
-                <h2 class="global-store-name">MM Brothers <span>Islamic Mart</span></h2>
+                <h2 class="global-store-name">Business Manager</h2>
             </div>
             <nav class="sidebar-nav">
                 <a href="#dashboard" class="nav-item active" data-view="dashboard" data-role="manager,admin">
@@ -216,8 +216,13 @@
     <!-- Toast Notifications Container -->
     <div id="toast-container"></div>
 
+    <!-- Branded login / onboarding / command palette roots (rendered by app2.js) -->
+    <div id="login-screen" class="login-screen" style="display:none;"></div>
+    <div id="onboarding-root"></div>
+    <div id="command-palette-root"></div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="js/app2.js?v=46"></script>
+    <script src="js/app2.js?v=100"></script>
     <script src="js/features-core.js?v=4"></script>
     <script src="js/features-whatsapp.js?v=2"></script>
     <script src="js/features-khata.js?v=28"></script>
