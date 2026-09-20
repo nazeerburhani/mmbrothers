@@ -63,11 +63,13 @@
                 </a>
             </nav>
         </aside>
+        <div class="sidebar-backdrop" onclick="toggleSidebar(false)"></div>
 
         <!-- Main Content -->
         <main class="main-content">
             <header class="top-header">
                 <div class="header-left">
+                    <button id="menu-toggle" class="menu-toggle" onclick="toggleSidebar()" aria-label="Menu">☰</button>
                     <h1 id="page-title">Dashboard</h1>
                 </div>
                 <div style="display:flex;align-items:center;gap:1rem;">

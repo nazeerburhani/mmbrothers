@@ -2063,3 +2063,60 @@ body.dark-mode input, body.dark-mode select, body.dark-mode textarea { backgroun
 
 /* === M6: Branding center responsive === */
 @media (max-width: 760px) { .brand-grid { grid-template-columns: 1fr !important; } }
+
+/* === Responsive: tablet & mobile === */
+.menu-toggle { display: none; background: none; border: none; font-size: 1.5rem; cursor: pointer; padding: 0.25rem 0.6rem; border-radius: 8px; color: var(--text-main); }
+.menu-toggle:hover { background: var(--bg-hover, #f1f5f9); }
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table-wrap table { min-width: 560px; }
+
+@media (max-width: 1024px) {
+    .pos-layout { grid-template-columns: 1fr 1fr; }
+    .stats-grid, .dashboard-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+@media (max-width: 860px) {
+    /* Sidebar becomes an overlay drawer */
+    .menu-toggle { display: inline-block; }
+    .sidebar {
+        position: fixed; top: 0; left: 0; bottom: 0;
+        width: 270px; max-width: 82vw;
+        transform: translateX(-105%);
+        transition: transform 0.25s ease;
+        z-index: 10000;
+        height: 100dvh;
+    }
+    body.sidebar-open .sidebar { transform: translateX(0); }
+    .sidebar-backdrop {
+        position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+        z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    }
+    body.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
+    .main-content { width: 100%; }
+    .top-header { padding: 0.9rem 1rem; }
+    .top-header h1 { font-size: 1.15rem; }
+
+    /* POS stacks */
+    .pos-layout { grid-template-columns: 1fr; height: auto; }
+    .pos-cart-pane { position: sticky; bottom: 0; }
+
+    /* Dashboard + cards stack */
+    .stats-grid, .dashboard-grid { grid-template-columns: 1fr !important; }
+
+    /* Settings: two-column grids stack */
+    #content-area [style*="grid-template-columns: 1fr 1fr"] { grid-template-columns: 1fr !important; }
+
+    /* Modals fit small screens */
+    .modal-content { width: calc(100vw - 2rem) !important; max-width: 480px !important; margin: 1rem auto; max-height: 92dvh; overflow-y: auto; }
+
+    /* Compact rows wrap */
+    .compact-row { flex-direction: column; }
+    .ob-2col { grid-template-columns: 1fr !important; }
+    .ob-grid { grid-template-columns: repeat(2, 1fr) !important; }
+
+    /* Command palette */
+    #palette-modal .modal-content, .cmd-palette { width: calc(100vw - 2rem) !important; }
+
+    /* Reminder dropdown fits */
+    #reminder-dropdown { width: calc(100vw - 3rem) !important; right: -60px !important; }
+}

@@ -4703,3 +4703,16 @@ window.deleteUser = async function(id) {
     renderSettings();
     showToast('User deleted.');
 };
+
+// === Mobile sidebar drawer ===
+window.toggleSidebar = function(force) {
+    const open = typeof force === 'boolean' ? force : !document.body.classList.contains('sidebar-open');
+    document.body.classList.toggle('sidebar-open', open);
+};
+// Close the drawer when navigating on mobile
+document.addEventListener('click', function(e) {
+    if (window.innerWidth <= 860 && document.body.classList.contains('sidebar-open')) {
+        const nav = e.target.closest('.sidebar-nav .nav-item');
+        if (nav) document.body.classList.remove('sidebar-open');
+    }
+});
