@@ -262,9 +262,11 @@ function renderBusinessSwitcher() {
     if (businesses.length <= 1) { wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
     wrap.style.display = '';
     const opts = businesses.map(b => `<option value="${b.id}"${b.id === (active && active.id) ? ' selected' : ''}>${escapeHtml(b.name)}</option>`).join('');
-    wrap.innerHTML = `<div class="bs-inner"><label class="bs-label">Business</label><select id="bs-select" class="bs-select">${opts}</select></div>`;
+    wrap.innerHTML = `<div class="bs-inner"><label class="bs-label">Business</label><select id="bs-select" class="bs-select">${opts}</select><button type="button" id="bs-add" class="bs-add">+ Add business</button></div>`;
     const sel = document.getElementById('bs-select');
     if (sel) sel.addEventListener('change', e => switchBusiness(e.target.value));
+    const add = document.getElementById('bs-add');
+    if (add) add.addEventListener('click', () => startAddBusiness());
 }
 
 // Global State
@@ -356,18 +358,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let db = getDB();
     if (db._fresh || !getBusinesses().length) {
-        // First run: provision a default business so the app boots.
-        // (The onboarding wizard takes over this path in the next milestone.)
-        const raw = { version: 2, businesses: [], activeBusinessId: null };
-        const b = makeBusiness('My Business');
-        b.users = [normalizeUser({ username: 'admin', password: '123', role: 'admin', name: 'Admin User' })];
-        b.data.categories = [{ id: 1, name: 'General' }];
-        b.data.customers = [{ id: 1, name: 'Walk-in Customer', phone: 'N/A', address: '' }];
-        raw.businesses.push(b);
-        raw.activeBusinessId = b.id;
-        writeRawDB(raw);
-        db = getDB();
-        applyTheme();
+        startOnboarding('first');
+        return;
     }
     if (!db.users || !db.users.length) {
         db.users = [normalizeUser({ username: 'admin', password: '123', role: 'admin', name: 'Admin User' })];
@@ -419,38 +411,68 @@ function applyGlobalSettings() {
     }
 }
 
+// === M4a: ROLES + MODULE PERMISSIONS ===
+const ROLES = ['owner','admin','manager','cashier','accountant','inventory','salesperson','staff'];
+const ROLE_LABELS = { owner: 'Owner', admin: 'Admin', manager: 'Manager', cashier: 'Cashier', accountant: 'Accountant', inventory: 'Inventory Manager', salesperson: 'Salesperson', staff: 'Staff' };
+// Which roles may use each module (owner/admin always have full access)
+const MODULE_ROLES = {
+    dashboard: ['owner','admin','manager','cashier','accountant','inventory','salesperson','staff'],
+    pos: ['owner','admin','manager','cashier','salesperson'],
+    inventory: ['owner','admin','manager','inventory'],
+    suppliers: ['owner','admin','manager','inventory','accountant'],
+    customers: ['owner','admin','manager','cashier','salesperson'],
+    khata: ['owner','admin','manager','cashier','accountant'],
+    expenses: ['owner','admin','manager','accountant'],
+    reports: ['owner','admin','manager','accountant'],
+    financials: ['owner','admin','accountant'],
+    notes: ['owner','admin','manager','cashier','accountant','inventory','salesperson','staff'],
+    audit: ['owner','admin'],
+    settings: ['owner','admin']
+};
+function roleAllowedModule(role, moduleId) {
+    if (role === 'owner' || role === 'admin') return true;
+    return (MODULE_ROLES[moduleId] || []).includes(role);
+}
+// Central gate: business module toggle AND role permission
+function canAccessModule(moduleId) {
+    const b = getActiveBusiness();
+    const mods = (b && b.settings && b.settings.modules) || {};
+    if (mods[moduleId] === false) return false;
+    const role = state.currentUser ? state.currentUser.role : null;
+    if (!role) return false;
+    return roleAllowedModule(role, moduleId);
+}
+
 function setupNavigation() {
-    const role = state.currentUser.role;
     let firstAllowedView = null;
 
     navItems.forEach(item => {
-        const allowedRoles = item.getAttribute('data-role').split(',');
-        if(allowedRoles.includes(role) || allowedRoles.includes('all')) {
-            item.classList.remove('hidden');
-            if(!firstAllowedView) firstAllowedView = item.getAttribute('data-view');
-        } else {
-            item.classList.add('hidden');
-        }
+        const view = item.getAttribute('data-view');
+        const allowed = canAccessModule(view);
+        item.classList.toggle('hidden', !allowed);
+        if (allowed && !firstAllowedView) firstAllowedView = view;
 
-        item.addEventListener('click', (e) => {
+        item.onclick = (e) => {
             e.preventDefault();
             navItems.forEach(nav => nav.classList.remove('active'));
             e.currentTarget.classList.add('active');
-            
-            const view = e.currentTarget.getAttribute('data-view');
-            if(view === 'inventory') state.inventoryFilter = 'all'; // Reset to all when clicking sidebar link
-            loadView(view);
-            window.location.hash = view;
-        });
+
+            const v = e.currentTarget.getAttribute('data-view');
+            if (v === 'inventory') state.inventoryFilter = 'all'; // Reset to all when clicking sidebar link
+            loadView(v);
+            window.location.hash = v;
+        };
     });
 
     const hashView = window.location.hash.replace('#', '');
-    const targetNav = document.querySelector(`[data-view="${hashView}"]`);
-    
-    if(targetNav && !targetNav.classList.contains('hidden')) {
+    const targetNav = hashView && document.querySelector(`[data-view="${hashView}"]`);
+
+    if (targetNav && !targetNav.classList.contains('hidden')) {
         targetNav.click();
-    } else {
+    } else if (firstAllowedView) {
         document.querySelector(`[data-view="${firstAllowedView}"]`).click();
+    } else if (contentArea) {
+        contentArea.innerHTML = '<div class="empty-state"><h3>No modules available</h3><p>Your role has no permitted modules, or all modules are disabled. Contact the business owner.</p></div>';
     }
 }
 
@@ -532,6 +554,10 @@ function fetchBottles() { state.bottles = getDB().bottles || getInitialData().bo
 function fetchKhata() { state.khataRecords = getDB().khataRecords || []; }
 
 async function loadView(view) {
+    if (!canAccessModule(view)) {
+        contentArea.innerHTML = '<div class="empty-state"><h3>Access denied</h3><p>You do not have permission to view this module.</p></div>';
+        return;
+    }
     pageTitle.innerHTML = view.charAt(0).toUpperCase() + view.slice(1);
     contentArea.style.opacity = 0;
     await new Promise(r => setTimeout(r, 100));
@@ -540,7 +566,6 @@ async function loadView(view) {
     try {
         switch(view) {
             case 'dashboard':
-                if(state.currentUser.role === 'salesman') return;
                 pageTitle.innerHTML = 'Dashboard';
                 fetchProducts(); fetchSalesHistory(); fetchKhata(); fetchStats(); renderDashboard();
                 break;
@@ -548,18 +573,15 @@ async function loadView(view) {
                 fetchProducts(); fetchCustomers(); fetchAttarProducts(); fetchBottles(); renderPOS();
                 break;
             case 'inventory':
-                if(state.currentUser.role === 'salesman') return;
                 fetchProducts(); fetchCategories(); fetchAttarProducts(); fetchBottles(); renderInventory();
                 break;
             case 'reports':
-                if(state.currentUser.role === 'salesman') return;
                 fetchSalesHistory(); renderReports();
                 break;
             case 'customers':
                 fetchCustomers(); renderCustomers();
                 break;
             case 'khata':
-                if(state.currentUser.role === 'salesman') return;
                 fetchCustomers(); fetchSalesHistory(); fetchKhata(); renderKhata();
                 break;
             case 'financials':
@@ -576,7 +598,6 @@ async function loadView(view) {
                 renderSettings();
                 break;
             case 'expenses':
-                if(state.currentUser.role === 'salesman') return;
                 fetchExpenses(); fetchWorkers(); renderExpenses();
                 break;
             case 'notes':
@@ -3437,4 +3458,302 @@ function enterApp() {
     renderBusinessSwitcher();
     setupNavigation();
     if (typeof buildSystemAlerts === 'function') buildSystemAlerts();
+}
+
+// === M3: ONBOARDING WIZARD + ADD-BUSINESS FLOW ===
+
+const BUSINESS_TYPES = [
+    { id: 'grocery', name: 'Grocery Store', categories: ['Grains & Rice', 'Cooking Oil & Ghee', 'Spices', 'Beverages', 'Snacks', 'Dairy & Eggs', 'Household'] },
+    { id: 'islamic-mart', name: 'Islamic Mart', categories: ['Attar', 'Caps', 'Tasbeeh', 'Miswak', 'Prayer Mats', 'Islamic Books', 'Shawls'] },
+    { id: 'clothing', name: 'Clothing Store', categories: ['Men', 'Women', 'Kids', 'Footwear', 'Accessories'] },
+    { id: 'perfume', name: 'Perfume Shop', categories: ['Attars', 'Sprays', 'Oils', 'Gift Sets'] },
+    { id: 'cosmetics', name: 'Cosmetics Store', categories: ['Skincare', 'Makeup', 'Hair Care', 'Fragrance'] },
+    { id: 'electronics', name: 'Electronics Shop', categories: ['Mobiles', 'Accessories', 'Home Appliances', 'Audio'] },
+    { id: 'pharmacy', name: 'Pharmacy', categories: ['Tablets', 'Syrups', 'Baby Care', 'Personal Care'] },
+    { id: 'restaurant', name: 'Restaurant / Food', categories: ['Starters', 'Main Course', 'Beverages', 'Desserts'] },
+    { id: 'general', name: 'General Store', categories: ['General'] },
+    { id: 'wholesale', name: 'Wholesale', categories: ['Bulk Goods'] },
+    { id: 'services', name: 'Service Business', categories: ['Services'] },
+    { id: 'distributor', name: 'Distributor', categories: ['Stock'] }
+];
+
+const MODULE_DEFS = [
+    { id: 'dashboard', name: 'Dashboard', icon: '📊', desc: 'KPIs, charts and insights' },
+    { id: 'pos', name: 'POS / Sales', icon: '🛒', desc: 'Point of sale and invoices' },
+    { id: 'inventory', name: 'Inventory', icon: '📦', desc: 'Products, stock and categories' },
+    { id: 'suppliers', name: 'Suppliers', icon: '🚚', desc: 'Purchases and payables' },
+    { id: 'customers', name: 'Customers', icon: '👥', desc: 'CRM and statements' },
+    { id: 'khata', name: 'Khata Ledger', icon: '📒', desc: 'Credit / udhaar tracking' },
+    { id: 'expenses', name: 'Expenses', icon: '💸', desc: 'Business expenses' },
+    { id: 'reports', name: 'Reports', icon: '📈', desc: 'Sales, profit and tax reports' },
+    { id: 'financials', name: 'Financials', icon: '💰', desc: 'Cash flow and summaries' },
+    { id: 'notes', name: 'Notes', icon: '📝', desc: 'Quick business notes' }
+];
+
+const CURRENCIES = [
+    { code: 'Rs', name: 'Rupee (Rs)' }, { code: '$', name: 'Dollar ($)' },
+    { code: '€', name: 'Euro (€)' }, { code: '£', name: 'Pound (£)' },
+    { code: '﷼', name: 'Riyal (﷼)' }, { code: 'د.إ', name: 'Dirham (د.إ)' },
+    { code: '₨', name: 'Rupee (₨)' }, { code: '¥', name: 'Yen/Yuan (¥)' }
+];
+
+let _ob = null;      // onboarding state
+let _obMode = 'first'; // 'first' | 'add'
+
+function defaultOb() {
+    const modules = {};
+    MODULE_DEFS.forEach(m => modules[m.id] = true);
+    return {
+        step: 1,
+        name: '', type: 'general', typeName: 'General Store',
+        logo: '', tagline: '',
+        phone: '', whatsapp: '', email: '', website: '',
+        address: '', city: '', country: '', taxNumber: '',
+        currency: 'Rs',
+        preset: 'royal-blue',
+        theme: Object.assign(defaultTheme(), THEME_PRESETS[0].colors),
+        modules,
+        ownerName: '', username: '', password: ''
+    };
+}
+
+function startOnboarding(mode) {
+    _obMode = mode || 'first';
+    _ob = defaultOb();
+    const app = document.getElementById('app');
+    const ls = document.getElementById('login-screen');
+    if (app) app.style.display = 'none';
+    if (ls) ls.style.display = 'none';
+    renderObStep();
+}
+function startAddBusiness() { startOnboarding('add'); }
+
+const OB_STEPS = ['Business', 'Logo', 'Contact', 'Currency', 'Brand Colors', 'Modules', 'Owner Account', 'Done'];
+
+function renderObStep() {
+    const root = document.getElementById('onboarding-root');
+    const o = _ob;
+    const dots = OB_STEPS.map((s, i) =>
+        '<div class="ob-dot' + (i + 1 === o.step ? ' active' : '') + (i + 1 < o.step ? ' done' : '') + '" title="' + s + '"></div>').join('');
+    root.innerHTML =
+        '<div class="ob-overlay"><div class="ob-card">' +
+            '<div class="ob-progress">' + dots + '</div>' +
+            '<div class="ob-step-label">Step ' + o.step + ' of ' + OB_STEPS.length + ' — ' + OB_STEPS[o.step - 1] + '</div>' +
+            '<div class="ob-body">' + obStepHtml() + '</div>' +
+            '<div class="ob-nav">' +
+                (o.step > 1 && o.step < 8 ? '<button class="btn btn-secondary ob-btn" onclick="obBack()">Back</button>' : '<span></span>') +
+                (_obMode === 'add' ? '<button class="btn btn-secondary ob-btn" onclick="obCancel()">Cancel</button>' : '') +
+                (o.step < 8 ? '<button class="btn btn-primary ob-btn" onclick="obNext()">Continue</button>'
+                            : '<button class="btn btn-primary ob-btn ob-finish" onclick="finishOnboarding()">Launch My Business</button>') +
+            '</div>' +
+        '</div></div>';
+    bindObStep();
+    applyObTheme();
+}
+
+function applyObTheme() {
+    // Live-apply the wizard's in-progress theme so the preview feels real
+    const root = document.documentElement;
+    const t = ensureThemeContrast(Object.assign(defaultTheme(), _ob.theme));
+    const set = (k, v) => root.style.setProperty(k, v);
+    set('--brand-primary', t.primary); set('--primary', t.primary);
+    set('--brand-button', t.button); set('--brand-button-text', t.buttonText);
+}
+
+function obStepHtml() {
+    const o = _ob;
+    if (o.step === 1) {
+        return '<h2 class="ob-title">Name your business</h2><p class="ob-sub">This appears on your dashboard, invoices, receipts and reports.</p>' +
+            '<label class="ob-label">Business name *</label>' +
+            '<input id="ob-name" class="ob-input" placeholder="e.g. Al-Noor General Store" value="' + escapeHtml(o.name) + '">' +
+            '<label class="ob-label">Business type</label>' +
+            '<div class="ob-grid">' + BUSINESS_TYPES.map(t =>
+                '<button type="button" class="ob-type' + (o.type === t.id ? ' selected' : '') + '" data-type="' + t.id + '" data-name="' + escapeHtml(t.name) + '">' + escapeHtml(t.name) + '</button>').join('') + '</div>';
+    }
+    if (o.step === 2) {
+        return '<h2 class="ob-title">Add your logo</h2><p class="ob-sub">Shown on the login screen, sidebar, invoices and receipts. You can skip this — your business initial is used instead.</p>' +
+            '<div class="ob-logo-preview" id="ob-logo-preview">' + (o.logo ? '<img src="' + o.logo + '">' : '<div class="brand-badge" style="background:' + o.theme.primary + ';color:' + bestTextOn(o.theme.primary) + ';width:90px;height:90px;font-size:2.5rem">' + escapeHtml(brandInitial(o.name)) + '</div>') + '</div>' +
+            '<label class="btn btn-secondary ob-btn" style="cursor:pointer">Upload Logo<input type="file" id="ob-logo-file" accept="image/*" style="display:none"></label>' +
+            (o.logo ? '<button class="btn btn-secondary ob-btn" onclick="obClearLogo()" style="margin-left:0.5rem">Remove</button>' : '');
+    }
+    if (o.step === 3) {
+        const f = (id, label, val, ph, type) => '<label class="ob-label">' + label + '</label><input id="' + id + '" class="ob-input" type="' + (type || 'text') + '" placeholder="' + escapeHtml(ph || '') + '" value="' + escapeHtml(val) + '">';
+        return '<h2 class="ob-title">Contact information</h2><p class="ob-sub">Printed on invoices, receipts and statements.</p>' +
+            '<div class="ob-2col">' +
+            f('ob-phone', 'Phone', o.phone, '0300 1234567', 'tel') + f('ob-whatsapp', 'WhatsApp', o.whatsapp, '0300 1234567', 'tel') +
+            f('ob-email', 'Email', o.email, 'info@business.com', 'email') + f('ob-website', 'Website', o.website, 'www.business.com') +
+            f('ob-address', 'Address', o.address, 'Shop 12, Main Bazaar') + f('ob-city', 'City', o.city, 'Lahore') +
+            f('ob-country', 'Country', o.country, 'Pakistan') + f('ob-tax', 'Tax / Registration No.', o.taxNumber, 'Optional') +
+            '</div>' +
+            '<label class="ob-label">Tagline</label><input id="ob-tagline" class="ob-input" placeholder="e.g. Quality you can trust" value="' + escapeHtml(o.tagline) + '">';
+    }
+    if (o.step === 4) {
+        return '<h2 class="ob-title">Choose your currency</h2><p class="ob-sub">Used across prices, invoices and reports.</p>' +
+            '<div class="ob-grid">' + CURRENCIES.map(c =>
+                '<button type="button" class="ob-cur' + (o.currency === c.code ? ' selected' : '') + '" data-cur="' + escapeHtml(c.code) + '"><b>' + escapeHtml(c.code) + '</b><span>' + escapeHtml(c.name) + '</span></button>').join('') + '</div>';
+    }
+    if (o.step === 5) {
+        return '<h2 class="ob-title">Pick your brand colors</h2><p class="ob-sub">The entire app — sidebar, buttons, invoices — adapts instantly. Watch the preview.</p>' +
+            '<div class="ob-presets">' + THEME_PRESETS.map(p =>
+                '<button type="button" class="ob-preset' + (o.preset === p.id ? ' selected' : '') + '" data-preset="' + p.id + '" title="' + p.name + '">' +
+                '<span class="ob-sw" style="background:' + p.colors.primary + '"></span><span class="ob-sw" style="background:' + p.colors.secondary + '"></span><span class="ob-sw" style="background:' + p.colors.accent + '"></span>' +
+                '<i>' + p.name + '</i></button>').join('') + '</div>' +
+            '<div class="ob-custom">' +
+                '<label>Primary <input type="color" id="ob-c-primary" value="' + o.theme.primary + '"></label>' +
+                '<label>Secondary <input type="color" id="ob-c-secondary" value="' + o.theme.secondary + '"></label>' +
+                '<label>Accent <input type="color" id="ob-c-accent" value="' + o.theme.accent + '"></label>' +
+            '</div>' +
+            '<div class="ob-preview">' +
+                '<div class="ob-pv-sidebar" style="background:' + o.theme.sidebar + ';color:' + bestTextOn(o.theme.sidebar) + '"><b>' + escapeHtml(brandInitial(o.name)) + '</b><span>' + escapeHtml(o.name || 'Your Business') + '</span></div>' +
+                '<div class="ob-pv-main"><div class="ob-pv-btn" style="background:' + o.theme.button + ';color:' + bestTextOn(o.theme.button) + '">New Sale</div>' +
+                '<div class="ob-pv-card">Invoice <b style="color:' + o.theme.invoice + '">INV-1001</b></div></div>' +
+            '</div>';
+    }
+    if (o.step === 6) {
+        return '<h2 class="ob-title">Select modules</h2><p class="ob-sub">Enable only what this business needs. You can change this later in Settings.</p>' +
+            '<div class="ob-modules">' + MODULE_DEFS.map(m =>
+                '<label class="ob-module' + (o.modules[m.id] ? ' selected' : '') + '"><input type="checkbox" data-module="' + m.id + '"' + (o.modules[m.id] ? ' checked' : '') + '>' +
+                '<span class="ob-m-icon">' + m.icon + '</span><span class="ob-m-meta"><b>' + m.name + '</b><i>' + m.desc + '</i></span></label>').join('') + '</div>';
+    }
+    if (o.step === 7) {
+        return '<h2 class="ob-title">Create the owner account</h2><p class="ob-sub">This account has full access to the business.</p>' +
+            '<label class="ob-label">Your name</label><input id="ob-ownername" class="ob-input" placeholder="e.g. Ahmed Khan" value="' + escapeHtml(o.ownerName) + '">' +
+            '<label class="ob-label">Username *</label><input id="ob-username" class="ob-input" placeholder="e.g. ahmed" value="' + escapeHtml(o.username) + '">' +
+            '<label class="ob-label">Password *</label><input id="ob-password" class="ob-input" type="password" placeholder="Choose a password">';
+    }
+    // step 8: summary
+    const typeName = (BUSINESS_TYPES.find(t => t.id === o.type) || {}).name || o.type;
+    const modNames = MODULE_DEFS.filter(m => o.modules[m.id]).map(m => m.name).join(', ');
+    return '<h2 class="ob-title">Ready to launch 🎉</h2><p class="ob-sub">Here is your new business environment:</p>' +
+        '<div class="ob-summary">' +
+        '<div class="ob-sum-row"><span>Business</span><b>' + escapeHtml(o.name) + '</b></div>' +
+        '<div class="ob-sum-row"><span>Type</span><b>' + escapeHtml(typeName) + '</b></div>' +
+        '<div class="ob-sum-row"><span>Currency</span><b>' + escapeHtml(o.currency) + '</b></div>' +
+        '<div class="ob-sum-row"><span>Owner</span><b>' + escapeHtml(o.username) + '</b></div>' +
+        '<div class="ob-sum-row"><span>Modules</span><b class="ob-sum-mods">' + escapeHtml(modNames) + '</b></div>' +
+        '</div>' +
+        '<div class="ob-preview"><div class="ob-pv-sidebar" style="background:' + o.theme.sidebar + ';color:' + bestTextOn(o.theme.sidebar) + '"><b>' + escapeHtml(brandInitial(o.name)) + '</b><span>' + escapeHtml(o.name) + '</span></div>' +
+        '<div class="ob-pv-main"><div class="ob-pv-btn" style="background:' + o.theme.button + ';color:' + bestTextOn(o.theme.button) + '">New Sale</div>' +
+        '<div class="ob-pv-card">Dashboard • POS • Inventory ready</div></div></div>';
+}
+
+function bindObStep() {
+    const o = _ob;
+    const q = s => document.querySelector(s);
+    if (o.step === 1) {
+        document.querySelectorAll('.ob-type').forEach(el => el.addEventListener('click', () => {
+            o.type = el.getAttribute('data-type'); o.typeName = el.getAttribute('data-name'); o.preset = o.preset;
+            document.querySelectorAll('.ob-type').forEach(x => x.classList.remove('selected'));
+            el.classList.add('selected');
+        }));
+    }
+    if (o.step === 2) {
+        const f = q('#ob-logo-file');
+        if (f) f.addEventListener('change', e => {
+            const file = e.target.files[0]; if (!file) return;
+            const r = new FileReader();
+            r.onload = evt => { o.logo = evt.target.result; renderObStep(); };
+            r.readAsDataURL(file);
+        });
+    }
+    if (o.step === 4) {
+        document.querySelectorAll('.ob-cur').forEach(el => el.addEventListener('click', () => {
+            o.currency = el.getAttribute('data-cur');
+            document.querySelectorAll('.ob-cur').forEach(x => x.classList.remove('selected'));
+            el.classList.add('selected');
+        }));
+    }
+    if (o.step === 5) {
+        document.querySelectorAll('.ob-preset').forEach(el => el.addEventListener('click', () => {
+            const p = THEME_PRESETS.find(x => x.id === el.getAttribute('data-preset'));
+            o.preset = p.id;
+            o.theme = Object.assign(defaultTheme(), p.colors);
+            o.theme.buttonText = bestTextOn(o.theme.button);
+            renderObStep();
+        }));
+        ['primary', 'secondary', 'accent'].forEach(k => {
+            const inp = q('#ob-c-' + k);
+            if (inp) inp.addEventListener('input', () => {
+                o.preset = 'custom'; o.theme[k] = inp.value;
+                if (k === 'primary') { o.theme.button = inp.value; o.theme.header = inp.value; o.theme.invoice = inp.value; }
+                if (k === 'secondary') o.theme.sidebar = shade(inp.value, -40);
+                o.theme.buttonText = bestTextOn(o.theme.button);
+                applyObTheme();
+                // live-update the mini preview without full re-render
+                const pv = document.querySelector('.ob-preview');
+                if (pv) { const tmp = document.createElement('div'); tmp.innerHTML = obPreviewHtml(); pv.replaceWith(tmp.firstChild); }
+            });
+        });
+    }
+    if (o.step === 6) {
+        document.querySelectorAll('.ob-module input').forEach(el => el.addEventListener('change', () => {
+            o.modules[el.getAttribute('data-module')] = el.checked;
+            el.closest('.ob-module').classList.toggle('selected', el.checked);
+        }));
+    }
+}
+function obPreviewHtml() {
+    const o = _ob;
+    return '<div class="ob-preview"><div class="ob-pv-sidebar" style="background:' + o.theme.sidebar + ';color:' + bestTextOn(o.theme.sidebar) + '"><b>' + escapeHtml(brandInitial(o.name)) + '</b><span>' + escapeHtml(o.name || 'Your Business') + '</span></div>' +
+        '<div class="ob-pv-main"><div class="ob-pv-btn" style="background:' + o.theme.button + ';color:' + bestTextOn(o.theme.button) + '">New Sale</div>' +
+        '<div class="ob-pv-card">Invoice <b style="color:' + o.theme.invoice + '">INV-1001</b></div></div></div>';
+}
+function obClearLogo() { _ob.logo = ''; renderObStep(); }
+function obCancel() {
+    document.getElementById('onboarding-root').innerHTML = '';
+    applyTheme();
+    enterApp();
+}
+
+function collectObStep() {
+    const o = _ob;
+    const v = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    if (o.step === 1) o.name = v('ob-name');
+    if (o.step === 3) {
+        o.phone = v('ob-phone'); o.whatsapp = v('ob-whatsapp'); o.email = v('ob-email');
+        o.website = v('ob-website'); o.address = v('ob-address'); o.city = v('ob-city');
+        o.country = v('ob-country'); o.taxNumber = v('ob-tax'); o.tagline = v('ob-tagline');
+    }
+    if (o.step === 7) { o.ownerName = v('ob-ownername'); o.username = v('ob-username'); o.password = document.getElementById('ob-password').value; }
+}
+function obNext() {
+    collectObStep();
+    const o = _ob;
+    if (o.step === 1 && !o.name) { showToast('Please enter your business name.', 'error'); const i = document.getElementById('ob-name'); if (i) i.focus(); return; }
+    if (o.step === 7) {
+        if (!o.username) { showToast('Please choose a username.', 'error'); return; }
+        if (!o.password || o.password.length < 3) { showToast('Password must be at least 3 characters.', 'error'); return; }
+    }
+    o.step = Math.min(8, o.step + 1);
+    renderObStep();
+}
+function obBack() { collectObStep(); _ob.step = Math.max(1, _ob.step - 1); renderObStep(); }
+
+function finishOnboarding() {
+    collectObStep();
+    const o = _ob;
+    if (!o.name) o.name = 'My Business';
+    if (!o.username) { showToast('Please choose a username.', 'error'); o.step = 7; renderObStep(); return; }
+    const b = makeBusiness(o.name, { type: o.typeName, theme: o.theme });
+    Object.assign(b.settings, {
+        tagline: o.tagline, phone: o.phone, whatsapp: o.whatsapp, email: o.email,
+        website: o.website, address: o.address, city: o.city, country: o.country,
+        tax_number: o.taxNumber, currency: o.currency, business_type: o.typeName,
+        logo_base64: o.logo || ''
+    });
+    b.settings.modules = Object.assign(b.settings.modules, o.modules);
+    b.users = [normalizeUser({ username: o.username, password: o.password, role: 'owner', name: o.ownerName || o.username })];
+    const typeDef = BUSINESS_TYPES.find(t => t.id === o.type);
+    b.data.categories = (typeDef ? typeDef.categories : ['General']).map((c, i) => ({ id: i + 1, name: c }));
+    b.data.customers = [{ id: 1, name: 'Walk-in Customer', phone: 'N/A', address: '' }];
+    const rr = readRawDB();
+    const raw = rr.raw || { version: 2, businesses: [], activeBusinessId: null };
+    raw.businesses.push(b);
+    raw.activeBusinessId = b.id;
+    writeRawDB(raw);
+    document.getElementById('onboarding-root').innerHTML = '';
+    setSession(b.users[0].id);
+    state.currentUser = b.users[0];
+    enterApp();
+    showToast('Welcome to ' + b.name + '! Your business is ready.');
 }
