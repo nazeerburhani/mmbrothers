@@ -352,9 +352,10 @@ window.getKhataPaymentInfo = function(sale, passedDB = null) {
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
     initDB();
+    applyTheme();
 
     let db = getDB();
-    if (db._fresh) {
+    if (db._fresh || !getBusinesses().length) {
         // First run: provision a default business so the app boots.
         // (The onboarding wizard takes over this path in the next milestone.)
         const raw = { version: 2, businesses: [], activeBusinessId: null };
@@ -366,18 +367,22 @@ document.addEventListener('DOMContentLoaded', () => {
         raw.activeBusinessId = b.id;
         writeRawDB(raw);
         db = getDB();
+        applyTheme();
     }
     if (!db.users || !db.users.length) {
         db.users = [normalizeUser({ username: 'admin', password: '123', role: 'admin', name: 'Admin User' })];
         saveDB(db);
     }
 
-    state.currentUser = db.users.find(u => u.role === 'admin') || db.users.find(u => u.role === 'owner') || db.users[0] || normalizeUser({ username: 'admin', password: '123', role: 'admin', name: 'Admin User' });
-    loadTenantIntoState(db);
-
-    applyGlobalSettings();
-    renderBusinessSwitcher();
-    setupNavigation();
+    // Resume session if valid, otherwise show the branded login
+    const sess = getSession();
+    const sessUser = sess && db.users.find(u => u.id === sess.userId);
+    if (sessUser) {
+        state.currentUser = sessUser;
+        enterApp();
+    } else {
+        renderLogin();
+    }
 
     document.getElementById('sidebar-logo-upload')?.addEventListener('change', (e) => {
         if(e.target.files[0]) {
@@ -3187,4 +3192,249 @@ window.deleteStaff = async function(id) {
         renderSettings();
         showToast('Staff member deleted');
     }
+}
+
+// === M2: THEME ENGINE + BRANDED LOGIN ===
+
+// --- Color utilities ---
+function hexToRgb(hex) {
+    hex = String(hex || '').replace('#', '');
+    if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+    const n = parseInt(hex, 16);
+    if (isNaN(n) || hex.length !== 6) return { r: 0, g: 0, b: 0 };
+    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+function luminance(hex) {
+    const { r, g, b } = hexToRgb(hex);
+    const f = c => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+    return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+}
+function contrastRatio(a, b) {
+    const l1 = luminance(a), l2 = luminance(b);
+    return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+}
+function bestTextOn(hex) {
+    // Pick the text color (white vs near-black) with the better contrast
+    return contrastRatio(hex, '#ffffff') >= contrastRatio(hex, '#0f172a') ? '#ffffff' : '#0f172a';
+}
+function shade(hex, amt) {
+    const { r, g, b } = hexToRgb(hex);
+    const f = c => Math.max(0, Math.min(255, Math.round(c + amt)));
+    return '#' + [f(r), f(g), f(b)].map(c => c.toString(16).padStart(2, '0')).join('');
+}
+
+// --- Presets ---
+const THEME_PRESETS = [
+    { id: 'royal-blue', name: 'Royal Blue', colors: { primary: '#1d4ed8', secondary: '#1e3a8a', accent: '#f59e0b', button: '#1d4ed8', header: '#1d4ed8', sidebar: '#1e293b', invoice: '#1d4ed8' } },
+    { id: 'classic-red', name: 'Classic Red', colors: { primary: '#A90011', secondary: '#7A000C', accent: '#D4AF37', button: '#A90011', header: '#A90011', sidebar: '#1e293b', invoice: '#A90011' } },
+    { id: 'emerald', name: 'Emerald', colors: { primary: '#047857', secondary: '#065f46', accent: '#f59e0b', button: '#047857', header: '#047857', sidebar: '#064e3b', invoice: '#047857' } },
+    { id: 'purple', name: 'Purple', colors: { primary: '#7c3aed', secondary: '#5b21b6', accent: '#fbbf24', button: '#7c3aed', header: '#7c3aed', sidebar: '#2e1065', invoice: '#7c3aed' } },
+    { id: 'orange', name: 'Orange', colors: { primary: '#ea580c', secondary: '#c2410c', accent: '#1d4ed8', button: '#ea580c', header: '#ea580c', sidebar: '#431407', invoice: '#ea580c' } },
+    { id: 'professional-navy', name: 'Professional Navy', colors: { primary: '#0f2a5c', secondary: '#0a1f44', accent: '#d4af37', button: '#0f2a5c', header: '#0f2a5c', sidebar: '#0a1f44', invoice: '#0f2a5c' } },
+    { id: 'teal', name: 'Teal', colors: { primary: '#0d9488', secondary: '#0f766e', accent: '#f59e0b', button: '#0d9488', header: '#0d9488', sidebar: '#134e4a', invoice: '#0d9488' } },
+    { id: 'minimal-black', name: 'Minimal Black', colors: { primary: '#111827', secondary: '#030712', accent: '#d4af37', button: '#111827', header: '#111827', sidebar: '#030712', invoice: '#111827' } },
+    { id: 'forest', name: 'Forest Green', colors: { primary: '#166534', secondary: '#14532d', accent: '#f59e0b', button: '#166534', header: '#166534', sidebar: '#052e16', invoice: '#166534' } },
+    { id: 'slate', name: 'Slate', colors: { primary: '#475569', secondary: '#334155', accent: '#f59e0b', button: '#475569', header: '#475569', sidebar: '#0f172a', invoice: '#475569' } }
+];
+function applyPreset(presetId) {
+    const p = THEME_PRESETS.find(x => x.id === presetId);
+    if (!p) return;
+    const db = getDB();
+    db.settings.theme = Object.assign(defaultTheme(), db.settings.theme || {}, p.colors);
+    // keep derived tokens in sync
+    db.settings.theme.buttonText = bestTextOn(db.settings.theme.button);
+    saveDB(db);
+    state.settings = db.settings;
+    applyTheme();
+    if (typeof renderBrandingPreview === 'function') renderBrandingPreview();
+}
+
+// --- Theme application ---
+function getTheme() {
+    const b = getActiveBusiness();
+    return Object.assign(defaultTheme(), (b && b.settings && b.settings.theme) || {});
+}
+
+// Accessibility guardrail: never let branding choices produce unreadable UI
+function ensureThemeContrast(t) {
+    if (contrastRatio(t.button, t.buttonText) < 3) t.buttonText = bestTextOn(t.button);
+    t._sidebarText = bestTextOn(t.sidebar);
+    t._headerText = bestTextOn(t.header);
+    t._primaryText = bestTextOn(t.primary);
+    return t;
+}
+
+function applyTheme() {
+    const t = ensureThemeContrast(getTheme());
+    // Persist auto-corrections so the settings UI reflects readable values
+    const b = getActiveBusiness();
+    if (b && b.settings && b.settings.theme && b.settings.theme.buttonText !== t.buttonText) {
+        const db = getDB();
+        if (db._tenantId) { db.settings.theme.buttonText = t.buttonText; saveDB(db); }
+    }
+    const root = document.documentElement;
+    const set = (k, v) => root.style.setProperty(k, v);
+    // Full brand token set
+    set('--brand-primary', t.primary); set('--brand-secondary', t.secondary); set('--brand-accent', t.accent);
+    set('--brand-background', t.background); set('--brand-surface', t.surface); set('--brand-text', t.text);
+    set('--brand-muted', t.muted); set('--brand-border', t.border); set('--brand-button', t.button);
+    set('--brand-button-text', t.buttonText); set('--brand-card', t.card); set('--brand-header', t.header);
+    set('--brand-sidebar', t.sidebar); set('--brand-table-header', t.tableHeader);
+    set('--brand-invoice', t.invoice); set('--brand-receipt', t.receipt);
+    set('--brand-sidebar-text', t._sidebarText); set('--brand-header-text', t._headerText);
+    // Map onto the legacy variables so the entire existing UI re-themes
+    set('--primary', t.primary); set('--primary-dark', t.secondary); set('--primary-light', t.accent);
+    set('--secondary', t.accent);
+    set('--bg-main', t.background); set('--bg-card', t.card);
+    set('--text-main', t.text); set('--text-muted', t.muted); set('--border', t.border);
+    // Dark / light / system
+    const mode = t.darkMode || 'system';
+    let dark = mode === 'dark';
+    if (mode === 'system' && window.matchMedia) { try { dark = window.matchMedia('(prefers-color-scheme: dark)').matches; } catch (e) {} }
+    document.body.classList.toggle('dark-mode', dark);
+    if (dark) {
+        set('--bg-main', '#0f172a'); set('--bg-card', '#1e293b'); set('--brand-card', '#1e293b');
+        set('--text-main', '#f1f5f9'); set('--text-muted', '#94a3b8'); set('--border', '#334155');
+        set('--brand-surface', '#1e293b'); set('--brand-text', '#f1f5f9'); set('--brand-muted', '#94a3b8');
+        set('--brand-border', '#334155'); set('--brand-table-header', '#1e293b'); set('--brand-receipt', '#1e293b');
+    }
+    setFavicon();
+    let meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) { meta = document.createElement('meta'); meta.name = 'theme-color'; document.head.appendChild(meta); }
+    meta.content = t.primary;
+}
+
+function brandInitial(name) {
+    return ((name || 'B').trim().charAt(0) || 'B').toUpperCase();
+}
+function initialBadgeDataUrl(name, color) {
+    const ch = brandInitial(name);
+    const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='64' height='64' rx='14' fill='" + color + "'/><text x='32' y='43' font-size='32' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold'>" + ch + "</text></svg>";
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+function setFavicon() {
+    const b = getActiveBusiness();
+    const s = b ? b.settings : null;
+    const t = getTheme();
+    let href;
+    if (s && s.favicon_base64) href = s.favicon_base64;
+    else if (s && s.logo_base64 && String(s.logo_base64).startsWith('data:image')) href = s.logo_base64;
+    else href = initialBadgeDataUrl(s && s.store_name, t.primary);
+    let link = document.querySelector('link[rel="icon"]');
+    if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+    link.href = href;
+    document.title = (s && s.store_name) ? s.store_name + ' — Business Manager' : 'Business Manager';
+}
+function brandLogoHtml(cls) {
+    const b = getActiveBusiness();
+    const s = b ? b.settings : null;
+    const t = getTheme();
+    if (s && s.logo_base64) return '<img src="' + s.logo_base64 + '" class="' + (cls || 'brand-logo-img') + '" alt="logo">';
+    return '<div class="brand-badge ' + (cls || '') + '" style="background:' + t.primary + ';color:' + bestTextOn(t.primary) + '">' + escapeHtml(brandInitial(s && s.store_name)) + '</div>';
+}
+
+// --- Sessions ---
+const SESSION_KEY = 'mm_session';
+function getSession() {
+    try {
+        const s = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
+        if (!s || !s.userId || !s.businessId) return null;
+        const b = getActiveBusiness();
+        if (!b || b.id !== s.businessId) return null;
+        return s;
+    } catch (e) { return null; }
+}
+function setSession(userId) {
+    const b = getActiveBusiness();
+    try { sessionStorage.setItem(SESSION_KEY, JSON.stringify({ userId, businessId: b && b.id, ts: Date.now() })); } catch (e) {}
+}
+function clearSession() { try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {} }
+
+// --- Branded login ---
+let _loginUserId = null;
+function renderLogin() {
+    clearSession();
+    state.currentUser = null;
+    const b = getActiveBusiness();
+    const s = b ? b.settings : defaultBusinessSettings('Business Manager');
+    const t = getTheme();
+    const users = b ? b.users : [];
+    _loginUserId = users.length === 1 ? users[0].id : null;
+    const app = document.getElementById('app');
+    const ls = document.getElementById('login-screen');
+    if (app) app.style.display = 'none';
+    const otherBiz = getBusinesses().filter(x => !b || x.id !== b.id);
+    ls.style.display = 'flex';
+    ls.innerHTML =
+        '<div class="login-bg" style="background:linear-gradient(135deg,' + t.primary + ',' + t.secondary + ')"></div>' +
+        '<div class="login-card">' +
+            '<div class="login-logo-wrap">' + brandLogoHtml('login-logo') + '</div>' +
+            '<h1 class="login-biz-name">' + escapeHtml(s.store_name) + '</h1>' +
+            (s.tagline ? '<p class="login-tagline">' + escapeHtml(s.tagline) + '</p>' : '') +
+            '<div class="login-users">' + users.map(u =>
+                '<button type="button" class="login-user' + (u.id === _loginUserId ? ' selected' : '') + '" data-id="' + u.id + '">' +
+                    '<span class="login-user-avatar">' + escapeHtml(brandInitial(u.name || u.username)) + '</span>' +
+                    '<span class="login-user-meta"><b>' + escapeHtml(u.name || u.username) + '</b><i>' + escapeHtml(u.role) + '</i></span>' +
+                '</button>').join('') + '</div>' +
+            '<input type="password" id="login-pass" class="login-input" placeholder="Enter password" autocomplete="current-password">' +
+            '<div id="login-error" class="login-error" style="display:none"></div>' +
+            '<button type="button" class="login-btn" style="background:' + t.button + ';color:' + t.buttonText + '" onclick="doLogin()">Sign In</button>' +
+            (otherBiz.length ? '<div class="login-switch"><span>Not your business?</span><select id="login-biz-switch" class="login-select">' +
+                '<option value="' + b.id + '">' + escapeHtml(s.store_name) + '</option>' +
+                otherBiz.map(x => '<option value="' + x.id + '">' + escapeHtml(x.name) + '</option>').join('') +
+                '</select></div>' : '') +
+        '</div>';
+    ls.querySelectorAll('.login-user').forEach(el => el.addEventListener('click', () => {
+        _loginUserId = el.getAttribute('data-id');
+        ls.querySelectorAll('.login-user').forEach(x => x.classList.remove('selected'));
+        el.classList.add('selected');
+        const inp = document.getElementById('login-pass'); if (inp) inp.focus();
+    }));
+    const sw = document.getElementById('login-biz-switch');
+    if (sw) sw.addEventListener('change', e => switchBusiness(e.target.value));
+    const inp = document.getElementById('login-pass');
+    if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+    if (inp) setTimeout(() => { const i2 = document.getElementById('login-pass'); if (i2) i2.focus(); }, 50);
+}
+function doLogin() {
+    const b = getActiveBusiness();
+    if (!b) return;
+    const inp = document.getElementById('login-pass');
+    const err = document.getElementById('login-error');
+    const user = b.users.find(u => u.id === _loginUserId) || b.users[0];
+    if (!user) { if (err) { err.style.display = ''; err.textContent = 'No users found for this business.'; } return; }
+    const pw = inp ? inp.value : '';
+    if (user.password && user.password !== pw) {
+        if (err) { err.style.display = ''; err.textContent = 'Incorrect password. Please try again.'; }
+        if (inp) { inp.value = ''; inp.focus(); }
+        const card = document.querySelector('.login-card');
+        if (card) { card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); }
+        return;
+    }
+    setSession(user.id);
+    state.currentUser = user;
+    enterApp();
+    showToast('Welcome back, ' + (user.name || user.username) + '!');
+}
+function logout() {
+    clearSession();
+    renderLogin();
+}
+function enterApp() {
+    const db = getDB();
+    if (!state.currentUser) {
+        const sess = getSession();
+        state.currentUser = (sess && db.users.find(u => u.id === sess.userId)) || db.users[0] || null;
+    }
+    loadTenantIntoState(db);
+    state.settings = db.settings;
+    const ls = document.getElementById('login-screen');
+    const app = document.getElementById('app');
+    if (ls) ls.style.display = 'none';
+    if (app) app.style.display = '';
+    applyGlobalSettings();
+    applyTheme();
+    renderBusinessSwitcher();
+    setupNavigation();
+    if (typeof buildSystemAlerts === 'function') buildSystemAlerts();
 }
