@@ -161,7 +161,7 @@ window.exportReportPDF = function() {
     const db = getDB();
     const { from, to } = getExportDateRange();
     const totalRevenue = sales.reduce((s, o) => s + (o.total_amount || 0), 0);
-    const storeName = state.settings.store_name || 'MM Brothers Islamic Mart';
+    const storeName = state.settings.store_name || 'Business';
 
     const printHTML = `
     <html><head><title>${storeName} - Sales Report</title>
@@ -189,7 +189,7 @@ window.exportReportPDF = function() {
         </div>
         <div class="summary">
             <div><div class="label">Total Orders</div><div class="value">${sales.length}</div></div>
-            <div><div class="label">Total Revenue</div><div class="value">Rs ${totalRevenue.toLocaleString()}</div></div>
+            <div><div class="label">Total Revenue</div><div class="value">${cur()} ${totalRevenue.toLocaleString()}</div></div>
             <div><div class="label">Paid Orders</div><div class="value">${sales.filter(s=>s.payment_status!=='unpaid').length}</div></div>
             <div><div class="label">Unpaid Orders</div><div class="value">${sales.filter(s=>s.payment_status==='unpaid').length}</div></div>
         </div>
@@ -202,7 +202,7 @@ window.exportReportPDF = function() {
                     <td>${new Date(s.created_at).toLocaleDateString()}</td>
                     <td>${cust.name}</td><td>${s.payment_method||'Cash'}</td>
                     <td>${(s.items||[]).reduce((a,b)=>a+b.quantity,0)}</td>
-                    <td style="font-weight:700;">Rs ${(s.total_amount||0).toLocaleString()}</td>
+                    <td style="font-weight:700;">${cur()} ${(s.total_amount||0).toLocaleString()}</td>
                     <td>${s.payment_status==='unpaid'?'UNPAID':'PAID'}</td>
                 </tr>`;
             }).join('')}</tbody>

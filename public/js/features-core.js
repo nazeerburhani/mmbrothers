@@ -26,7 +26,7 @@ window.renderPOSAttarProducts = function(products) {
             <div class="attar-badge">ATTAR</div>
             ${p.image_url ? `<img src="${p.image_url}" style="width:100%;height:100px;object-fit:cover;border-radius:8px;margin-bottom:8px;">` : '<div style="font-size:2.5rem;margin-bottom:8px;">🧴</div>'}
             <div style="font-weight:700;color:#1e293b;margin-bottom:4px;">${p.name}</div>
-            <div style="color:#d97706;font-weight:800;">Rs ${p.price_per_ml}/ml</div>
+            <div style="color:#d97706;font-weight:800;">${cur()} ${p.price_per_ml}/ml</div>
             <div class="attar-ml-display">Available: <strong>${available}ml</strong> / ${p.total_ml}ml</div>
             <div class="attar-ml-bar"><div class="attar-ml-bar-fill" style="width:${pct}%;background:${barColor};"></div></div>
         </div>`;
@@ -63,13 +63,13 @@ window.showAttarSaleModal = function(attarId) {
             <h3 style="margin-bottom:1.5rem;">🍶 Manage Bottles</h3>
             <form id="bottle-add-form" style="display:flex;gap:0.5rem;margin-bottom:1.5rem;">
                 <input type="number" id="bottle-new-size" class="form-control" placeholder="Size (ML)" required style="flex:1.2;padding:0.8rem;border-radius:10px;border:1px solid #e2e8f0;">
-                <input type="number" id="bottle-new-cost" class="form-control" placeholder="Cost (Rs)" required style="flex:1;padding:0.8rem;border-radius:10px;border:1px solid #e2e8f0;">
+                <input type="number" id="bottle-new-cost" class="form-control" placeholder="Cost (${cur()})" required style="flex:1;padding:0.8rem;border-radius:10px;border:1px solid #e2e8f0;">
                 <input type="number" id="bottle-new-stock" class="form-control" placeholder="Stock" required style="flex:1;padding:0.8rem;border-radius:10px;border:1px solid #e2e8f0;">
                 <button type="submit" class="btn btn-primary" style="border-radius:10px;background:#d97706;border:none;">Add</button>
             </form>
             <table style="width:100%;font-size:0.9rem;"><thead><tr><th>Size</th><th>Cost/Bot</th><th>Stock</th><th>Action</th></tr></thead>
             <tbody>${bottles.map(b => `<tr><td style="font-weight:700;">${b.size}ml</td>
-                <td>Rs ${b.cost_price || 0}</td>
+                <td>${cur()} ${b.cost_price || 0}</td>
                 <td><input type="number" value="${b.stock}" onchange="updateBottleStock(${b.id},this.value)" style="width:70px;padding:0.4rem;border-radius:6px;border:1px solid #e2e8f0;font-weight:700;"></td>
                 <td><button class="btn btn-secondary" style="padding:0.2rem 0.5rem;font-size:0.8rem;color:#ef4444;" onclick="deleteBottle(${b.id})">Remove</button></td></tr>`).join('')}</tbody></table>
             <div style="text-align:right;margin-top:1rem;"><button class="btn btn-secondary" onclick="document.getElementById('bottle-modal').remove()">Close</button></div>
@@ -115,7 +115,7 @@ window.showAttarSaleModal = function(attarId) {
                     <input type="hidden" id="selected-sale-bottle-size" value="0">
                 </div>
                 <div class="form-group" style="margin-bottom:1.5rem;">
-                    <label style="font-weight:700;display:block;margin-bottom:0.5rem;">Price per Bottle (Rs)</label>
+                    <label style="font-weight:700;display:block;margin-bottom:0.5rem;">Price per Bottle (${cur()})</label>
                     <input type="number" id="bottle-sale-price" class="form-control" placeholder="e.g. 50" min="0" style="width:100%;padding:0.8rem;border-radius:10px;border:1px solid #e2e8f0;font-size:1.1rem;font-weight:700;">
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
@@ -183,7 +183,7 @@ window.showAttarSaleModal = function(attarId) {
     div.innerHTML = `
         <div class="modal-content" style="max-width:500px;border-radius:20px;padding:2rem;">
             <h3 style="margin-bottom:1.5rem;display:flex;align-items:center;gap:10px;">🧴 Sell: ${attar.name}</h3>
-            <p style="color:#64748b;font-size:0.9rem;margin-bottom:1rem;">Price: <strong>Rs ${attar.price_per_ml}/ml</strong> | Available: <strong>${available}ml</strong></p>
+            <p style="color:#64748b;font-size:0.9rem;margin-bottom:1rem;">Price: <strong>${cur()} ${attar.price_per_ml}/ml</strong> | Available: <strong>${available}ml</strong></p>
             <div class="form-group" style="margin-bottom:1rem;">
                 <label style="font-weight:700;display:block;margin-bottom:0.5rem;">Quantity (ML)</label>
                 <input type="number" id="attar-ml-input" class="form-control" placeholder="e.g. 0, 3, 6..." min="0" max="${available}" style="width:100%;padding:0.8rem;border-radius:10px;border:1px solid #e2e8f0;font-size:1.1rem;font-weight:700;" oninput="window.calcAttarPrice(${attar.id})">
@@ -211,7 +211,7 @@ window.showAttarSaleModal = function(attarId) {
             <div class="attar-calc-result" id="attar-calc-box" style="display:none; padding:1rem; background:#f8fafc; border-radius:10px; margin-bottom:1rem; border:1px solid #e2e8f0;">
                 <label style="font-weight:700;display:block;margin-bottom:0.5rem;color:#1e293b;">Total Price (Editable)</label>
                 <div style="display:flex;align-items:center;gap:0.5rem;">
-                    <span style="font-weight:800;font-size:1.2rem;color:#64748b;">Rs</span>
+                    <span style="font-weight:800;font-size:1.2rem;color:#64748b;">${cur()}</span>
                     <input type="number" id="attar-total-price-input" class="form-control" style="width:100%;padding:0.8rem;border-radius:8px;border:1px solid #cbd5e1;font-size:1.2rem;font-weight:800;color:#0f172a;">
                 </div>
             </div>

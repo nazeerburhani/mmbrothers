@@ -90,15 +90,15 @@ function renderKhata() {
             <div class="khata-summary-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;">
                 <div style="background:white;border-radius:16px;padding:1.5rem;text-align:center;border:1px solid #e2e8f0;">
                     <div style="font-size:0.8rem;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:0.5rem;">Receivable</div>
-                    <div style="font-size:1.6rem;font-weight:800;color:#ef4444;">Rs ${totalReceivable.toLocaleString()}</div>
+                    <div style="font-size:1.6rem;font-weight:800;color:#ef4444;">${cur()} ${totalReceivable.toLocaleString()}</div>
                 </div>
                 <div style="background:white;border-radius:16px;padding:1.5rem;text-align:center;border:1px solid #e2e8f0;">
                     <div style="font-size:0.8rem;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:0.5rem;">Payable</div>
-                    <div style="font-size:1.6rem;font-weight:800;color:#f59e0b;">Rs ${totalPayable.toLocaleString()}</div>
+                    <div style="font-size:1.6rem;font-weight:800;color:#f59e0b;">${cur()} ${totalPayable.toLocaleString()}</div>
                 </div>
                 <div style="background:white;border-radius:16px;padding:1.5rem;text-align:center;border:1px solid #e2e8f0;">
                     <div style="font-size:0.8rem;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:0.5rem;">Net Balance</div>
-                    <div style="font-size:1.6rem;font-weight:800;color:${netBalance >= 0 ? '#10b981' : '#ef4444'};">Rs ${netBalance.toLocaleString()}</div>
+                    <div style="font-size:1.6rem;font-weight:800;color:${netBalance >= 0 ? '#10b981' : '#ef4444'};">${cur()} ${netBalance.toLocaleString()}</div>
                 </div>
                 <div style="background:${overdueCount > 0 ? '#fef2f2' : 'white'};border-radius:16px;padding:1.5rem;text-align:center;border:1px solid ${overdueCount > 0 ? '#fecaca' : '#e2e8f0'};cursor:pointer;" onclick="setKhataTab('overdue')">
                     <div style="font-size:0.8rem;color:${overdueCount > 0 ? '#991b1b' : '#64748b'};font-weight:700;text-transform:uppercase;margin-bottom:0.5rem;">Due Reminders</div>
@@ -155,10 +155,10 @@ function renderKhata() {
                                 <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.8rem;">
                                     <div>
                                         <div style="font-size:1.1rem;font-weight:800;color:#0f172a;margin-bottom:4px;">${data.name} ${typeBadge}</div>
-                                <div style="font-size:0.85rem;color:#64748b;">${data.phone ? `<a href="https://wa.me/${typeof formatPhone==='function'?formatPhone(data.phone)||'':data.phone}" target="_blank" onclick="event.stopPropagation()" style="color:#25D366;text-decoration:none;font-weight:600;">📞 ${data.phone}</a>` : '<span style="color:#94a3b8;">No phone</span>'} · ${data.records.length} entries${data.advance > 0 ? ` · <span style="background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:6px;font-size:0.75rem;font-weight:700;">Advance: Rs ${data.advance.toLocaleString()}</span>` : ''}${(()=>{ const db2=getDB(); const cReminders=(db2.khataReminders||[]).filter(rm=>rm.person_key===key && rm.status==='Pending'); if(cReminders.length===0) return ''; const isDue=cReminders.some(rm=>new Date(rm.reminder_date)<=new Date()); return isDue ? ' <span style="background:#fef2f2;color:#991b1b;padding:2px 8px;border-radius:6px;font-size:0.75rem;font-weight:700;">🔴 Reminder Due</span>' : ' <span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:6px;font-size:0.75rem;font-weight:700;">⏰ Reminder Set</span>'; })()}</div>
+                                <div style="font-size:0.85rem;color:#64748b;">${data.phone ? `<a href="https://wa.me/${typeof formatPhone==='function'?formatPhone(data.phone)||'':data.phone}" target="_blank" onclick="event.stopPropagation()" style="color:#25D366;text-decoration:none;font-weight:600;">📞 ${data.phone}</a>` : '<span style="color:#94a3b8;">No phone</span>'} · ${data.records.length} entries${data.advance > 0 ? ` · <span style="background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:6px;font-size:0.75rem;font-weight:700;">Advance: ${cur()} ${data.advance.toLocaleString()}</span>` : ''}${(()=>{ const db2=getDB(); const cReminders=(db2.khataReminders||[]).filter(rm=>rm.person_key===key && rm.status==='Pending'); if(cReminders.length===0) return ''; const isDue=cReminders.some(rm=>new Date(rm.reminder_date)<=new Date()); return isDue ? ' <span style="background:#fef2f2;color:#991b1b;padding:2px 8px;border-radius:6px;font-size:0.75rem;font-weight:700;">🔴 Reminder Due</span>' : ' <span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:6px;font-size:0.75rem;font-weight:700;">⏰ Reminder Set</span>'; })()}</div>
                                     </div>
                                     <div style="text-align:right;">
-                                        <div style="font-size:1.4rem;font-weight:900;color:${balance>0?'#ef4444':'#10b981'};">${balance > 0 ? 'Rs ' + balance.toLocaleString() : 'Cleared'}</div>
+                                        <div style="font-size:1.4rem;font-weight:900;color:${balance>0?'#ef4444':'#10b981'};">${balance > 0 ? cur() + ' ' + balance.toLocaleString() : 'Cleared'}</div>
                                         <span style="font-size:0.75rem;padding:3px 10px;border-radius:6px;font-weight:700;background:${status==='paid'?'#ecfdf5':status==='partial'?'#fff7ed':'#fef2f2'};color:${status==='paid'?'#065f46':status==='partial'?'#c2410c':'#991b1b'};">${statusLabel}</span>
                                     </div>
                                 </div>
@@ -184,9 +184,9 @@ function renderKhata() {
                                     return `<tr style="border-bottom:1px solid #f1f5f9;">
                                         <td style="padding:8px;">${new Date(r.created_at).toLocaleDateString()}</td>
                                         <td style="padding:8px;color:#64748b;">${r.description || (r.sale_id ? 'Order #'+r.sale_id : 'Khata Entry')}</td>
-                                        <td style="padding:8px;font-weight:700;">Rs ${(r.total_amount||0).toLocaleString()}</td>
-                                        <td style="padding:8px;color:#10b981;font-weight:700;">Rs ${(r.paid_amount||0).toLocaleString()}</td>
-                                        <td style="padding:8px;font-weight:800;color:${runBal>0?'#ef4444':'#10b981'};">Rs ${runBal.toLocaleString()}</td>
+                                        <td style="padding:8px;font-weight:700;">${cur()} ${(r.total_amount||0).toLocaleString()}</td>
+                                        <td style="padding:8px;color:#10b981;font-weight:700;">${cur()} ${(r.paid_amount||0).toLocaleString()}</td>
+                                        <td style="padding:8px;font-weight:800;color:${runBal>0?'#ef4444':'#10b981'};">${cur()} ${runBal.toLocaleString()}</td>
                                         <td style="padding:8px;"><span style="font-size:0.75rem;padding:2px 8px;border-radius:6px;font-weight:700;background:${rStatus==='paid'?'#ecfdf5':rStatus==='partial'?'#fff7ed':'#fef2f2'};color:${rStatus==='paid'?'#065f46':rStatus==='partial'?'#c2410c':'#991b1b'};">${rLabel}</span></td>
                                         <td style="padding:8px;">${rBal > 0 ? `<button class="btn btn-primary" style="padding:0.3rem 0.8rem;font-size:0.75rem;border-radius:8px;" onclick="event.stopPropagation();showKhataPaymentModal(${r.id})">${rStatus === 'partial' ? '💰 Pay Rest' : '💰 Pay'}</button>` : '<span style="color:#10b981;font-weight:700;">✅ Paid</span>'}</td>
                                     </tr>`;
@@ -249,7 +249,7 @@ window.showManualKhataModal = function() {
                     </select>
                 </div>
                 <div class="form-group" style="margin-bottom:1rem;">
-                    <label style="font-weight:700;display:block;margin-bottom:0.5rem;">Amount (Rs)</label>
+                    <label style="font-weight:700;display:block;margin-bottom:0.5rem;">Amount (${cur()})</label>
                     <input type="number" id="khata-entry-amount" class="form-control" placeholder="Enter amount" required min="1" style="width:100%;padding:0.8rem;border-radius:10px;border:1px solid #e2e8f0;font-size:1.1rem;font-weight:700;">
                 </div>
                 <div class="form-group" style="margin-bottom:1.5rem;">
@@ -353,7 +353,7 @@ window.processKhataOrder = async function() {
 
     saveDB(db);
     if (advanceUsed > 0 && advanceUsed < totAmt) {
-        showToast('Credit order saved! Rs ' + advanceUsed.toLocaleString() + ' deducted from advance ✅');
+        showToast('Credit order saved! ' + cur() + ' ' + advanceUsed.toLocaleString() + ' deducted from advance ✅');
     } else if (advanceUsed >= totAmt) {
         showToast('Order fully paid from advance balance! ✅');
     } else {
@@ -381,7 +381,7 @@ window.showKhataPaymentModal = function(recordId) {
         <div class="modal-content" style="max-width:400px;border-radius:20px;padding:2rem;text-align:center;">
             <div style="font-size:2.5rem;margin-bottom:0.5rem;">💰</div>
             <h3 style="margin-bottom:0.5rem;">Record Payment</h3>
-            <p style="color:#64748b;margin-bottom:1.5rem;">${name} — Balance: <strong style="color:#ef4444;">Rs ${balance.toLocaleString()}</strong></p>
+            <p style="color:#64748b;margin-bottom:1.5rem;">${name} — Balance: <strong style="color:#ef4444;">${cur()} ${balance.toLocaleString()}</strong></p>
             <form id="khata-pay-form">
                 <input type="number" id="khata-pay-amount" class="form-control" placeholder="Amount received" required min="1" style="width:100%;padding:1rem;border-radius:12px;border:1px solid #e2e8f0;font-size:1.2rem;font-weight:700;text-align:center;margin-bottom:1rem;">
                 <input type="text" id="khata-pay-note" class="form-control" placeholder="Note (optional)" style="width:100%;padding:0.8rem;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:1.5rem;">
@@ -431,9 +431,9 @@ window.showKhataPaymentModal = function(recordId) {
         fetchKhata();
         renderKhata();
         if (amt > balance) {
-            showToast('Payment applied! Rs ' + (amt - balance).toLocaleString() + ' saved as advance ✅');
+            showToast('Payment applied! ' + cur() + ' ' + (amt - balance).toLocaleString() + ' saved as advance ✅');
         } else {
-            showToast(`Rs ${amt.toLocaleString()} payment recorded! ✅`);
+            showToast(`${cur()} ${amt.toLocaleString()} payment recorded! ✅`);
         }
     });
 }
@@ -503,9 +503,9 @@ window.showKhataReceipt = function(personKey, gd) {
         return `<tr style="border-bottom:1px solid #ddd;">
             <td style="padding:8px 6px;font-size:11px;">${ev.date.toLocaleDateString()}</td>
             <td style="padding:8px 6px;font-size:11px;">${ev.desc}</td>
-            <td style="padding:8px 6px;font-size:11px;text-align:right;">${ev.amount > 0 ? 'Rs ' + ev.amount.toLocaleString() : '-'}</td>
-            <td style="padding:8px 6px;font-size:11px;text-align:right;color:#2E7D32;">${ev.paid > 0 ? 'Rs ' + ev.paid.toLocaleString() : '-'}</td>
-            <td style="padding:8px 6px;font-size:11px;text-align:right;font-weight:700;color:${runBal>0?'#C62828':'#2E7D32'};">Rs ${runBal.toLocaleString()}</td>
+            <td style="padding:8px 6px;font-size:11px;text-align:right;">${ev.amount > 0 ? cur() + ' ' + ev.amount.toLocaleString() : '-'}</td>
+            <td style="padding:8px 6px;font-size:11px;text-align:right;color:#2E7D32;">${ev.paid > 0 ? cur() + ' ' + ev.paid.toLocaleString() : '-'}</td>
+            <td style="padding:8px 6px;font-size:11px;text-align:right;font-weight:700;color:${runBal>0?'#C62828':'#2E7D32'};">${cur()} ${runBal.toLocaleString()}</td>
         </tr>`;
     }).join('');
 
@@ -519,9 +519,8 @@ window.showKhataReceipt = function(personKey, gd) {
         <div style="flex:1;overflow-y:auto;overflow-x:hidden;">
             <div id="khata-receipt-print" style="font-family:'Segoe UI',system-ui,-apple-system,sans-serif;">
                 <div style="background:linear-gradient(135deg, #A90011 0%, #7A000C 100%);color:white;padding:1.5rem;text-align:center;border-bottom:3px solid #D4AF37;">
-                <div style="font-size:20px;font-weight:900;letter-spacing:1.5px;">MM BROTHERS</div>
-                <div style="font-size:14px;font-weight:600;color:#D4AF37;letter-spacing:2px;"><span style="margin-right:6px;">ISLAMIC</span><span>MART</span></div>
-                <div style="font-size:10px;margin-top:6px;opacity:0.85;letter-spacing:0.3px;"><span style="margin-right:3px;">Saleem</span><span style="margin-right:3px;">Market</span><span style="margin-right:3px;">Par</span><span style="margin-right:3px;">Hoti,</span><span style="margin-right:3px;">Mardan</span><span>·</span><span style="margin-left:3px;">03025731705</span></div>
+                <div style="font-size:20px;font-weight:900;letter-spacing:1.5px;">${escapeHtml(((getDB().settings.store_name)||'BUSINESS').toUpperCase())}</div>
+                <div style="font-size:10px;margin-top:6px;opacity:0.85;letter-spacing:0.3px;">${escapeHtml([getDB().settings.store_address, getDB().settings.store_contact].filter(Boolean).join(' · ') || '')}</div>
             </div>
             <div style="padding:1.5rem;">
                 <div style="display:flex;justify-content:space-between;margin-bottom:1rem;padding-bottom:0.8rem;border-bottom:2px dashed #e2e8f0;">
@@ -549,15 +548,15 @@ window.showKhataReceipt = function(personKey, gd) {
                 <div style="border-top:2px solid #1a1a1a;padding-top:1rem;">
                     <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
                         <span style="font-size:12px;color:#475569;font-weight:600;"><span style="margin-right:5px;">Total</span><span>Amount</span></span>
-                        <span style="font-size:13px;font-weight:600;color:#1a1a1a;">Rs ${totalAmt.toLocaleString()}</span>
+                        <span style="font-size:13px;font-weight:600;color:#1a1a1a;">${cur()} ${totalAmt.toLocaleString()}</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
                         <span style="font-size:12px;color:#475569;font-weight:600;"><span style="margin-right:5px;">Total</span><span>Paid</span></span>
-                        <span style="font-size:13px;font-weight:600;color:#10b981;">Rs ${totalPaid.toLocaleString()}</span>
+                        <span style="font-size:13px;font-weight:600;color:#10b981;">${cur()} ${totalPaid.toLocaleString()}</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;padding-top:10px;border-top:1px solid #e2e8f0;">
                         <span style="font-size:13px;font-weight:600;color:${remaining>0?'#ef4444':'#10b981'};"><span style="margin-right:5px;">Remaining</span><span>Balance</span></span>
-                        <span style="font-size:16px;font-weight:700;color:${remaining>0?'#ef4444':'#10b981'};">Rs ${remaining.toLocaleString()}</span>
+                        <span style="font-size:16px;font-weight:700;color:${remaining>0?'#ef4444':'#10b981'};">${cur()} ${remaining.toLocaleString()}</span>
                     </div>
                 </div>
                 ${(function(){
@@ -566,14 +565,14 @@ window.showKhataReceipt = function(personKey, gd) {
                     var totalUsed = advAll.filter(function(h){ return h.type === 'used'; }).reduce(function(s,h){ return s + (h.amount||0); }, 0);
                     if (adv <= 0 && totalUsed <= 0) return '';
                     var html = '<div style="margin-top:8px;padding:8px 10px;background:#E3F2FD;border:1px solid #90CAF9;border-radius:8px;">';
-                    if (totalUsed > 0) html += '<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;"><span style="color:#1565C0;font-weight:600;"><span style="margin-right:4px;">Used</span><span style="margin-right:4px;">from</span><span>Advance</span></span><span style="font-weight:700;color:#1565C0;">Rs ' + totalUsed.toLocaleString() + '</span></div>';
+                    if (totalUsed > 0) html += '<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;"><span style="color:#1565C0;font-weight:600;"><span style="margin-right:4px;">Used</span><span style="margin-right:4px;">from</span><span>Advance</span></span><span style="font-weight:700;color:#1565C0;">' + cur() + ' ' + totalUsed.toLocaleString() + '</span></div>';
                     if (adv > 0) {
                         var recvRecs = advAll.filter(function(h){ return h.type === 'received'; });
                         var sinceStr = '';
                         if (recvRecs.length > 0) {
                             sinceStr = ' <span style="font-size:9px;color:#1565C0;">(Since ' + new Date(recvRecs[recvRecs.length-1].date).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) + ')</span>';
                         }
-                        html += '<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;"><span style="color:#1565C0;font-weight:600;"><span style="margin-right:4px;">Advance</span><span>Balance</span>' + sinceStr + '</span><span style="font-weight:700;color:#1565C0;">Rs ' + adv.toLocaleString() + '</span></div>';
+                        html += '<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;"><span style="color:#1565C0;font-weight:600;"><span style="margin-right:4px;">Advance</span><span>Balance</span>' + sinceStr + '</span><span style="font-weight:700;color:#1565C0;">' + cur() + ' ' + adv.toLocaleString() + '</span></div>';
                     }
                     html += '</div>';
                     return html;
@@ -662,11 +661,11 @@ window.shareKhataReceipt = async function(personKey) {
         const caption = [
             'السلام علیکم،',
             '',
-            '*ایم ایم برادرز اسلامک مارٹ* کی جانب سے آپ کے کھاتے کی تفصیل درج ذیل ہے:',
+            '*' + (getDB().settings.store_name || 'ہمارے اسٹور') + '* کی جانب سے آپ کے کھاتے کی تفصیل درج ذیل ہے:',
             '',
-            'کل رقم: *Rs ' + totalAmt.toLocaleString() + '*',
-            'ادا شدہ رقم: *Rs ' + totalPaid.toLocaleString() + '*',
-            'بقایا رقم: *Rs ' + remaining.toLocaleString() + '*',
+            'کل رقم: *' + cur() + ' ' + totalAmt.toLocaleString() + '*',
+            'ادا شدہ رقم: *' + cur() + ' ' + totalPaid.toLocaleString() + '*',
+            'بقایا رقم: *' + cur() + ' ' + remaining.toLocaleString() + '*',
             '',
             'براہِ کرم بقایا رقم جلد از جلد ادا کریں۔',
             '',
@@ -792,7 +791,7 @@ window.showSmartPayment = function(personKey) {
         return `<div class="sp-entry" data-id="${r.id}" data-bal="${bal}" style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:0.85rem;">
             <div><span style="color:#64748b;">#${i+1}</span> ${r.description || (r.sale_id ? 'Order #'+r.sale_id : 'Entry')} <span style="color:#94a3b8;font-size:0.75rem;">${new Date(r.created_at).toLocaleDateString()}</span></div>
             <div style="display:flex;gap:8px;align-items:center;">
-                <span style="color:#64748b;">Rs ${bal.toLocaleString()}</span>
+                <span style="color:#64748b;">${cur()} ${bal.toLocaleString()}</span>
                 <span class="sp-status" style="font-size:0.7rem;padding:2px 6px;border-radius:4px;font-weight:700;background:#fef2f2;color:#991b1b;">Pending</span>
             </div>
         </div>`;
@@ -802,10 +801,10 @@ window.showSmartPayment = function(personKey) {
         <div style="text-align:center;margin-bottom:1rem;">
             <div style="font-size:2.5rem;">\ud83d\udcb0</div>
             <h3 style="margin-bottom:4px;">Receive Payment</h3>
-            <p style="color:#64748b;font-size:0.85rem;">${cust.name || name} \u2014 Total Due: <strong style="color:#ef4444;">Rs ${totalDue.toLocaleString()}</strong></p>
+            <p style="color:#64748b;font-size:0.85rem;">${cust.name || name} \u2014 Total Due: <strong style="color:#ef4444;">${cur()} ${totalDue.toLocaleString()}</strong></p>
         </div>
         <div style="margin-bottom:1rem;">
-            <label style="font-weight:700;font-size:0.85rem;display:block;margin-bottom:6px;">Amount Received (Rs)</label>
+            <label style="font-weight:700;font-size:0.85rem;display:block;margin-bottom:6px;">Amount Received (${cur()})</label>
             <input type="number" id="sp-amount" class="form-control" placeholder="Enter any amount" min="1" style="width:100%;padding:1rem;border-radius:12px;border:1px solid #e2e8f0;font-size:1.3rem;font-weight:800;text-align:center;" oninput="previewSmartPay()">
         </div>
         <div id="sp-preview" style="max-height:200px;overflow-y:auto;margin-bottom:1rem;">
@@ -853,7 +852,7 @@ window.previewSmartPay = function() {
             st.style.cssText = 'font-size:0.7rem;padding:2px 6px;border-radius:4px;font-weight:700;background:#ecfdf5;color:#065f46;';
             remaining -= bal;
         } else if (remaining > 0 && bal > 0) {
-            st.textContent = `Partial (Rs ${remaining.toLocaleString()})`;
+            st.textContent = `Partial (${cur()} ${remaining.toLocaleString()})`;
             st.style.cssText = 'font-size:0.7rem;padding:2px 6px;border-radius:4px;font-weight:700;background:#fff7ed;color:#c2410c;';
             remaining = 0;
         } else {
@@ -864,7 +863,7 @@ window.previewSmartPay = function() {
 
     if (remaining > 0 && advNote) {
         advNote.style.display = 'block';
-        advNote.innerHTML = `\ud83d\udcb3 Rs ${remaining.toLocaleString()} will be stored as <strong>Advance Balance</strong>`;
+        advNote.innerHTML = `\ud83d\udcb3 ${cur()} ${remaining.toLocaleString()} will be stored as <strong>Advance Balance</strong>`;
     } else if (advNote) {
         advNote.style.display = 'none';
     }
@@ -923,9 +922,9 @@ window.confirmSmartPay = function(personKey) {
     renderKhata();
 
     if (remaining > 0) {
-        showToast('Payment applied! Rs ' + remaining.toLocaleString() + ' saved as advance \u2705');
+        showToast('Payment applied! ' + cur() + ' ' + remaining.toLocaleString() + ' saved as advance \u2705');
     } else {
-        showToast('Rs ' + amt.toLocaleString() + ' payment distributed! \u2705');
+        showToast(cur() + ' ' + amt.toLocaleString() + ' payment distributed! \u2705');
     }
 };
 

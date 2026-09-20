@@ -249,10 +249,10 @@ function renderDashboard() {
     contentArea.innerHTML = `
         <div class="dashboard-grid">
             <div class="stat-card">
-                <i class="stat-icon">💰</i><h3>Total Sales</h3><div class="value">Rs ${state.stats.total_sales.toLocaleString()}</div>
+                <i class="stat-icon">💰</i><h3>Total Sales</h3><div class="value">${cur()} ${state.stats.total_sales.toLocaleString()}</div>
             </div>
             <div class="stat-card gold-accent">
-                <i class="stat-icon">📈</i><h3>Total Profit</h3><div class="value">Rs ${state.stats.total_profit.toLocaleString()}</div>
+                <i class="stat-icon">📈</i><h3>Total Profit</h3><div class="value">${cur()} ${state.stats.total_profit.toLocaleString()}</div>
             </div>
             <div class="stat-card danger-accent">
                 <i class="stat-icon">⚠️</i><h3>Low Stock Alerts</h3><div class="value">${state.stats.low_stock_count}</div>
@@ -317,7 +317,7 @@ function renderInventory() {
                 <tbody>
                     ${sortedProducts.map(p => `<tr>
                         <td><div style="display:flex;align-items:center;gap:12px;">${p.image_url ? `<img src="${p.image_url}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;">` : '🖼️'} <strong>${p.name}</strong></div></td>
-                        <td>${p.category}</td><td>${p.cost_price.toLocaleString()}</td><td style="color:var(--primary);font-weight:600;">Rs ${p.sale_price.toLocaleString()}</td>
+                        <td>${p.category}</td><td>${p.cost_price.toLocaleString()}</td><td style="color:var(--primary);font-weight:600;">${cur()} ${p.sale_price.toLocaleString()}</td>
                         <td>${p.stock}</td><td><span class="badge ${p.stock > (p.min_stock !== undefined ? p.min_stock : 10) ? 'badge-success' : 'badge-danger'}">${p.stock > (p.min_stock !== undefined ? p.min_stock : 10) ? 'In Stock' : 'Low Stock'}</span></td>
                         <td><button class="btn btn-secondary" onclick='showProductModal(${JSON.stringify(p).replace(/'/g, "&#39;")})'>Edit</button></td>
                     </tr>`).join('')}
@@ -345,8 +345,8 @@ function renderInventory() {
                         </div>
                     </div>
                     <div class="compact-row">
-                        <div class="form-group"><label>Cost (Rs)</label><input type="number" id="prod-cost" class="form-control" required></div>
-                        <div class="form-group"><label>Sale Price (Rs)</label><input type="number" id="prod-price" class="form-control" required></div>
+                        <div class="form-group"><label>Cost (${cur()})</label><input type="number" id="prod-cost" class="form-control" required></div>
+                        <div class="form-group"><label>Sale Price (${cur()})</label><input type="number" id="prod-price" class="form-control" required></div>
                         <div class="form-group"><label>Stock</label><input type="number" id="prod-stock" class="form-control" required></div>
                         <div class="form-group"><label>Min Stock</label><input type="number" id="prod-min-stock" class="form-control" required></div>
                     </div>
@@ -430,7 +430,7 @@ function renderPOS() {
                         </select>
                     </div>
 
-                    <div class="summary-row"><span>Subtotal:</span><span id="cart-subtotal">Rs 0</span></div>
+                    <div class="summary-row"><span>Subtotal:</span><span id="cart-subtotal">${cur()} 0</span></div>
                     
                     <select class="payment-method-select" id="payment-method">
                         <option value="Cash">Cash</option><option value="Bank Transfer">Bank Transfer</option>
@@ -438,7 +438,7 @@ function renderPOS() {
                         <option value="SadaPay">SadaPay</option><option value="NayaPay">NayaPay</option>
                     </select>
 
-                    <div class="summary-total"><span>Total:</span><span id="cart-total" style="color:var(--primary);">Rs 0</span></div>
+                    <div class="summary-total"><span>Total:</span><span id="cart-total" style="color:var(--primary);">${cur()} 0</span></div>
                     <button class="btn-checkout" onclick="processCheckout()">Checkout & Print</button>
                 </div>
             </div>
@@ -463,7 +463,7 @@ function renderPOSProducts(products) {
     document.getElementById('pos-products-grid').innerHTML = products.map(p => `
         <div class="product-card" onclick="addToCart(${p.id})" style="${p.stock <= 0 ? 'opacity: 0.5; pointer-events: none;' : ''}">
             ${p.image_url ? `<img src="${p.image_url}" class="product-img">` : `<div class="product-img" style="display:flex;align-items:center;justify-content:center;font-size:2rem;color:#cbd5e1;">📸</div>`}
-            <div class="product-name">${p.name}</div><div class="product-price">Rs ${p.sale_price.toLocaleString()}</div>
+            <div class="product-name">${p.name}</div><div class="product-price">${cur()} ${p.sale_price.toLocaleString()}</div>
             <div style="font-size:0.85rem;color:#64748B;margin-top:8px;">Stock: <strong style="color:${p.stock <= (p.min_stock !== undefined ? p.min_stock : 10) ? 'var(--danger)' : 'var(--success)'}">${p.stock}</strong></div>
         </div>`).join('');
 }
@@ -490,10 +490,10 @@ window.updateQty = function(id, d) {
 function renderCart() {
     const d = document.getElementById('cart-items'); if (!d) return;
     if(state.cart.length === 0) d.innerHTML = '<div style="text-align:center; color:var(--text-muted); margin-top:3rem;">Cart is empty</div>';
-    else d.innerHTML = state.cart.map(i => `<div class="cart-item"><div class="cart-item-info"><div class="cart-item-name">${i.name}</div><div class="cart-item-price">Rs ${i.price.toLocaleString()}</div></div><div class="cart-qty-controls"><button class="qty-btn" onclick="updateQty(${i.product_id}, -1)">-</button><span style="font-weight:600;min-width:24px;text-align:center;">${i.quantity}</span><button class="qty-btn" onclick="updateQty(${i.product_id}, 1)">+</button></div></div>`).join('');
+    else d.innerHTML = state.cart.map(i => `<div class="cart-item"><div class="cart-item-info"><div class="cart-item-name">${i.name}</div><div class="cart-item-price">${cur()} ${i.price.toLocaleString()}</div></div><div class="cart-qty-controls"><button class="qty-btn" onclick="updateQty(${i.product_id}, -1)">-</button><span style="font-weight:600;min-width:24px;text-align:center;">${i.quantity}</span><button class="qty-btn" onclick="updateQty(${i.product_id}, 1)">+</button></div></div>`).join('');
     const t = state.cart.reduce((s, i) => s + (i.price * i.quantity), 0);
-    document.getElementById('cart-subtotal').textContent = `Rs ${t.toLocaleString()}`;
-    document.getElementById('cart-total').textContent = `Rs ${t.toLocaleString()}`;
+    document.getElementById('cart-subtotal').textContent = `${cur()} ${t.toLocaleString()}`;
+    document.getElementById('cart-total').textContent = `${cur()} ${t.toLocaleString()}`;
 }
 
 window.processCheckout = function() {
@@ -549,9 +549,9 @@ window.processCheckout = function() {
 
     document.getElementById('receipt-items').innerHTML = state.cart.map(item => `
         <tr><td style="padding-right:10px;">${item.name}</td><td style="text-align:center">${item.quantity}</td>
-        <td style="text-align:right">Rs ${item.price.toLocaleString()}</td><td style="text-align:right; font-weight:bold;">Rs ${(item.price * item.quantity).toLocaleString()}</td></tr>
+        <td style="text-align:right">${cur()} ${item.price.toLocaleString()}</td><td style="text-align:right; font-weight:bold;">${cur()} ${(item.price * item.quantity).toLocaleString()}</td></tr>
     `).join('');
-    document.getElementById('receipt-total-amt').textContent = `Rs ${totAmt.toLocaleString()}`;
+    document.getElementById('receipt-total-amt').textContent = `${cur()} ${totAmt.toLocaleString()}`;
 
     const modal = document.getElementById('receipt-modal');
     modal.classList.remove('hidden');
@@ -563,7 +563,7 @@ window.processCheckout = function() {
 function renderReports() {
     contentArea.innerHTML = `<div class="data-table-container"><div class="table-header"><h3>Sales History</h3><button class="btn btn-gold" onclick="exportToCSV()">Export Excel</button></div>
     <table><thead><tr><th>Order ID</th><th>Date</th><th>Method</th><th>Items</th><th>Revenue</th><th>Profit</th></tr></thead>
-    <tbody>${state.salesHistory.map(s => `<tr><td>#${s.id}</td><td>${new Date(s.created_at).toLocaleString()}</td><td>${s.payment_method||'Cash'}</td><td>${(s.items || []).reduce((a,b)=>a+b.quantity,0)}</td><td style="font-weight:700;">Rs ${s.total_amount.toLocaleString()}</td><td style="color:var(--success);">+Rs ${s.profit.toLocaleString()}</td></tr>`).join('')}</tbody></table></div>`;
+    <tbody>${state.salesHistory.map(s => `<tr><td>#${s.id}</td><td>${new Date(s.created_at).toLocaleString()}</td><td>${s.payment_method||'Cash'}</td><td>${(s.items || []).reduce((a,b)=>a+b.quantity,0)}</td><td style="font-weight:700;">${cur()} ${s.total_amount.toLocaleString()}</td><td style="color:var(--success);">+${cur()} ${s.profit.toLocaleString()}</td></tr>`).join('')}</tbody></table></div>`;
 }
 window.exportToCSV = function() { /* Truncated for brevity, works identical */ }
 

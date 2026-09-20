@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MM Brothers Islamic Mart</title>
+    <title>Business Manager</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,7 +22,7 @@
                     <img src="logo.jpg" alt="Logo" class="brand-logo-img global-logo-img" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'90\' height=\'90\'><rect width=\'90\' height=\'90\' fill=\'%23f1f5f9\'/><text x=\'45\' y=\'50\' font-size=\'24\' text-anchor=\'middle\' fill=\'%23cbd5e1\'>Logo</text></svg>'">
                 </label>
                 <input type="file" id="sidebar-logo-upload" accept="image/*" style="display:none;">
-                <h2 class="global-store-name">MM Brothers <span>Islamic Mart</span></h2>
+                <h2 class="global-store-name">Business Manager</h2>
             </div>
             <nav class="sidebar-nav">
                 <a href="#dashboard" class="nav-item active" data-view="dashboard" data-role="manager,admin">
@@ -33,6 +33,9 @@
                 </a>
                 <a href="#inventory" class="nav-item" data-view="inventory" data-role="manager,admin">
                     <i>📦</i> Inventory
+                </a>
+                <a href="#suppliers" class="nav-item" data-view="suppliers" data-role="manager,admin">
+                    <i>🚚</i> Suppliers
                 </a>
                 <a href="#reports" class="nav-item" data-view="reports" data-role="manager,admin">
                     <i>📈</i> Reports
@@ -52,16 +55,21 @@
                 <a href="#notes" class="nav-item" data-view="notes" data-role="salesman,manager,admin">
                     <i>📝</i> Notes & Reminders
                 </a>
+                <a href="#audit" class="nav-item" data-view="audit" data-role="admin">
+                    <i>🕘</i> Audit Log
+                </a>
                 <a href="#settings" class="nav-item" data-view="settings" data-role="admin">
                     <i>⚙️</i> Admin Settings
                 </a>
             </nav>
         </aside>
+        <div class="sidebar-backdrop" onclick="toggleSidebar(false)"></div>
 
         <!-- Main Content -->
         <main class="main-content">
             <header class="top-header">
                 <div class="header-left">
+                    <button id="menu-toggle" class="menu-toggle" onclick="toggleSidebar()" aria-label="Menu">☰</button>
                     <h1 id="page-title">Dashboard</h1>
                 </div>
                 <div style="display:flex;align-items:center;gap:1rem;">
@@ -93,7 +101,7 @@
                 <!-- Header -->
                 <div style="text-align: center; margin-bottom: 15px; border-bottom: 2px solid #000; padding-bottom: 15px;">
                     <img id="receipt-logo" src="logo.jpg" alt="Logo" onerror="this.style.display='none'" style="max-width: 70px; margin-bottom: 8px; filter: grayscale(1);">
-                    <div id="receipt-store-name" style="font-size: 22px; font-weight: 900; letter-spacing: 1.0px; color: #000; text-transform: uppercase; line-height: 1.1; margin-bottom: 8px;">MM BROTHERS<br>ISLAMIC MART</div>
+                    <div id="receipt-store-name" style="font-size: 22px; font-weight: 900; letter-spacing: 1.0px; color: #000; text-transform: uppercase; line-height: 1.1; margin-bottom: 8px;">YOUR BUSINESS</div>
                     <div id="receipt-store-contact" style="font-size: 13px; font-weight: 700; color: #000; letter-spacing: 0.5px; margin-bottom: 3px;">Contact: 03025731705</div>
                     <div id="receipt-store-address" style="font-size: 10px; font-weight: 600; color: #444; letter-spacing: 0.3px; margin-top: 2px;">Saleem Market Par Hoti, Mardan</div>
                 </div>
@@ -134,9 +142,10 @@
                 
                 <div style="border-top: 2px solid #000; padding-top: 10px;">
                     <!-- Total Section -->
+                    <div id="receipt-tax-line" style="display:none;"></div>
                     <div style="display: flex; justify-content: space-between; align-items: baseline; font-size: 22px; font-weight: 900; margin-top: 5px; padding: 5px 0;">
                         <span>TOTAL</span>
-                        <span id="receipt-total-amt" style="border-bottom: 4px double #000; padding-bottom: 2px;">Rs 0</span>
+                        <span id="receipt-total-amt" style="border-bottom: 4px double #000; padding-bottom: 2px;">0</span>
                     </div>
                 </div>
                 
@@ -216,8 +225,16 @@
     <!-- Toast Notifications Container -->
     <div id="toast-container"></div>
 
+    <!-- Branded login / onboarding / command palette roots (rendered by app2.js) -->
+    <div id="login-screen" class="login-screen" style="display:none;"></div>
+    <div id="onboarding-root"></div>
+    <div id="command-palette-root"></div>
+
+    <!-- Command palette root -->
+    <div id="command-palette-root"></div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="js/app2.js?v=46"></script>
+    <script src="js/app2.js?v=100"></script>
     <script src="js/features-core.js?v=4"></script>
     <script src="js/features-whatsapp.js?v=2"></script>
     <script src="js/features-khata.js?v=28"></script>

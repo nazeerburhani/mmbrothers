@@ -10,7 +10,8 @@ function formatPhone(phone) {
 }
 
 function getWhatsAppMessage(name, balance) {
-    return `السلام علیکم،\n\nMM Brothers Islamic Mart کی جانب سے آپ کو مطلع کیا جاتا ہے کہ آپ کے کھاتے میں *Rs ${balance.toLocaleString()}* بقایا ہے۔\n\nبراہِ کرم اپنا بقایا ادھار جلد از جلد ادا کرنے کی زحمت فرمائیں۔\n\nشکریہ۔`;
+    const bizName = (typeof getDB === "function" && getDB().settings && getDB().settings.store_name) || "ہمارے اسٹور";
+    return `السلام علیکم،\n\n${bizName} کی جانب سے آپ کو مطلع کیا جاتا ہے کہ آپ کے کھاتے میں *${cur()} ${balance.toLocaleString()}* بقایا ہے۔\n\nبراہِ کرم اپنا بقایا ادھار جلد از جلد ادا کرنے کی زحمت فرمائیں۔\n\nشکریہ۔`;
 }
 
 function wasSentToday(record) {
@@ -59,7 +60,7 @@ window.sendWhatsAppReminder = async function(personKey, gd) {
     div.innerHTML = `<div class="modal-content" style="max-width:450px;border-radius:20px;padding:2rem;">
         <div style="text-align:center;margin-bottom:1rem;"><div style="font-size:2.5rem;">📲</div>
         <h3>Send Reminder</h3>
-        <p style="color:#64748b;font-size:0.85rem;">${gd.name} — Rs ${balance.toLocaleString()}</p></div>
+        <p style="color:#64748b;font-size:0.85rem;">${gd.name} — ${cur()} ${balance.toLocaleString()}</p></div>
         <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:1rem;margin-bottom:1.5rem;direction:rtl;font-size:0.9rem;line-height:1.8;max-height:200px;overflow-y:auto;" id="wa-msg-preview">${msg.replace(/\n/g,'<br>')}</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
             <button class="btn btn-secondary" onclick="document.getElementById('wa-preview-modal').remove()" style="padding:1rem;border-radius:12px;">Cancel</button>
@@ -134,7 +135,7 @@ window.sendAllDueReminders = async function() {
     if (dueList.length === 0) return showToast('No due reminders to send', 'error');
 
     // Show list of due customers
-    const nameList = dueList.map((k,i) => `${i+1}. ${groups[k].name} — Rs ${(groups[k].totalDue - groups[k].totalPaid).toLocaleString()}`).join('\n');
+    const nameList = dueList.map((k,i) => `${i+1}. ${groups[k].name} — ${cur()} ${(groups[k].totalDue - groups[k].totalPaid).toLocaleString()}`).join('\n');
     const proceed = await showConfirm('Send Reminders', `${dueList.length} customer(s) due:\n\n${nameList.slice(0, 500)}${nameList.length > 500 ? '\n...' : ''}\n\nEach will open one by one. You confirm after each.`, {
         icon: '📲', confirmText: `Start (${dueList.length} customers)`
     });
@@ -156,7 +157,7 @@ window.sendAllDueReminders = async function() {
 
         const confirmed = await showConfirm(
             `(${i+1}/${dueList.length}) Message Sent?`,
-            `Did you send the message to ${g.name}?\nBalance: Rs ${balance.toLocaleString()}`,
+            `Did you send the message to ${g.name}?\nBalance: ${cur()} ${balance.toLocaleString()}`,
             { icon: '✅', confirmText: 'Yes, Sent — Next', cancelText: 'Skip — Next' }
         );
         if (confirmed) {
