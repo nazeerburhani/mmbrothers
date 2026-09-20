@@ -546,6 +546,7 @@ window.showAlert = function(title, message, icon = "ℹ️") {
 // --- DATA FETCHERS ---
 function fetchProducts() { state.products = getDB().products; }
 function fetchCustomers() { state.customers = getDB().customers; }
+function fetchSuppliersData() { const db = getDB(); state.suppliers = db.suppliers || []; state.purchases = db.purchases || []; }
 function fetchSalesHistory() { state.salesHistory = (getDB().salesHistory || []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); }
 function fetchCategories() { state.categories = getDB().categories || []; }
 function fetchExpenses() { state.expenses = getDB().expenses || []; }
@@ -575,6 +576,9 @@ async function loadView(view) {
                 break;
             case 'inventory':
                 fetchProducts(); fetchCategories(); fetchAttarProducts(); fetchBottles(); renderInventory();
+                break;
+            case 'suppliers':
+                fetchProducts(); fetchSuppliersData(); renderSuppliers();
                 break;
             case 'reports':
                 fetchSalesHistory(); renderReports();
@@ -783,9 +787,13 @@ function renderInventoryTable() {
         if (p.is_discounted) {
             statusHtml += `<span class="badge badge-info" style="margin-left:5px;">Discounted</span>`;
         }
+        if (p.status === 'inactive') {
+            statusHtml += `<span class="badge" style="margin-left:5px;background:#64748b;color:#fff;">Inactive</span>`;
+        }
+        const brandHtml = p.brand ? `<div style="font-size:0.75rem;color:#64748b;font-weight:400;">${p.brand}${p.unit ? ' • ' + p.unit : ''}</div>` : (p.unit && p.unit !== 'pcs' ? `<div style="font-size:0.75rem;color:#64748b;font-weight:400;">${p.unit}</div>` : '');
 
-        return `<tr style="${p.stock <= 0 ? 'background-color: #fff1f2;' : (p.stock <= threshold ? 'background-color: #fffbeb;' : '')}">
-        <td><div style="display:flex;align-items:center;gap:12px;">${p.image_url ? `<img src="${p.image_url}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;">` : '📦'} <strong>${p.name}</strong></div></td>
+        return `<tr style="${p.stock <= 0 ? 'background-color: #fff1f2;' : (p.stock <= threshold ? 'background-color: #fffbeb;' : '')}${p.status === 'inactive' ? 'opacity:0.6;' : ''}">
+        <td><div style="display:flex;align-items:center;gap:12px;">${p.image_url ? `<img src="${p.image_url}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;">` : '📦'} <div><strong>${p.name}</strong>${brandHtml}</div></div></td>
         <td>${p.category}</td><td>${p.cost_price.toLocaleString()}</td><td style="color:var(--primary);font-weight:600;">Rs ${p.sale_price.toLocaleString()}</td>
         <td><strong style="color:${p.stock <= threshold ? 'var(--danger)' : 'inherit'};">${p.stock}</strong></td>
         <td><div style="display:flex; flex-wrap:wrap; gap:4px;">${statusHtml}</div></td>
@@ -874,6 +882,16 @@ function renderInventory() {
                         <div class="form-group"><label>Sale Price (Rs)</label><input type="number" id="prod-price" class="form-control" required></div>
                         <div class="form-group"><label>Stock</label><input type="number" id="prod-stock" class="form-control" required></div>
                         <div class="form-group"><label>Low Stock Alert</label><input type="number" id="prod-low-stock" class="form-control" required value="10"></div>
+                    </div>
+                    <div class="compact-row">
+                        <div class="form-group"><label>Brand</label><input type="text" id="prod-brand" class="form-control" placeholder="e.g. National"></div>
+                        <div class="form-group"><label>Unit</label><input type="text" id="prod-unit" class="form-control" placeholder="pcs / kg / litre" value="pcs"></div>
+                        <div class="form-group"><label>Wholesale Price (Rs)</label><input type="number" id="prod-wholesale" class="form-control" placeholder="0"></div>
+                        <div class="form-group"><label>Expiry Date</label><input type="date" id="prod-expiry" class="form-control"></div>
+                    </div>
+                    <div class="compact-row">
+                        <div class="form-group"><label>Supplier</label><select id="prod-supplier" class="form-control"><option value="">-- No supplier --</option></select></div>
+                        <div class="form-group"><label>Status</label><select id="prod-status" class="form-control"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
                     </div>
 
                     <!-- VARIANTS SECTION -->
@@ -986,9 +1004,15 @@ function renderInventory() {
         const basePayload = {
             category: category,
             cost_price: parseFloat(document.getElementById('prod-cost').value), sale_price: parseFloat(document.getElementById('prod-price').value),
-            low_stock_threshold: parseInt(document.getElementById('prod-low-stock').value), 
+            low_stock_threshold: parseInt(document.getElementById('prod-low-stock').value),
             image_url: document.getElementById('prod-image-base64').value,
-            is_discounted: document.getElementById('prod-discounted').checked
+            is_discounted: document.getElementById('prod-discounted').checked,
+            brand: (document.getElementById('prod-brand').value || '').trim(),
+            unit: (document.getElementById('prod-unit').value || '').trim() || 'pcs',
+            wholesale_price: parseFloat(document.getElementById('prod-wholesale').value) || 0,
+            expiry: document.getElementById('prod-expiry').value || '',
+            supplier_id: document.getElementById('prod-supplier').value || '',
+            status: document.getElementById('prod-status').value || 'active'
         };
 
         if (id) { 
@@ -1066,6 +1090,15 @@ window.showProductModal = function(product = null) {
     ['id','name','category','cost','price','stock'].forEach(k => document.getElementById(`prod-${k}`).value = product ? product[k === 'price' ? 'sale_price' : k === 'cost' ? 'cost_price' : k] : '');
     document.getElementById('prod-low-stock').value = product && product.low_stock_threshold !== undefined ? product.low_stock_threshold : 10;
     document.getElementById('prod-discounted').checked = product ? product.is_discounted : false;
+    document.getElementById('prod-brand').value = product ? (product.brand || '') : '';
+    document.getElementById('prod-unit').value = product ? (product.unit || 'pcs') : 'pcs';
+    document.getElementById('prod-wholesale').value = product && product.wholesale_price ? product.wholesale_price : '';
+    document.getElementById('prod-expiry').value = product ? (product.expiry || '') : '';
+    document.getElementById('prod-status').value = product ? (product.status || 'active') : 'active';
+    // Supplier dropdown
+    const supSel = document.getElementById('prod-supplier');
+    supSel.innerHTML = '<option value="">-- No supplier --</option>' + (state.suppliers || []).map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+    if (product && product.supplier_id) supSel.value = product.supplier_id;
     document.getElementById('prod-image-base64').value = product ? product.image_url : '';
     document.getElementById('prod-file-input').value = '';
     
@@ -1412,7 +1445,10 @@ document.addEventListener('click', (e) => {
 
 function renderPOSProducts(products) {
     const groupedMap = new Map();
-    
+
+    // Inactive products are not sellable
+    products = (products || []).filter(p => p.status !== 'inactive');
+
     products.forEach(p => {
         if (p.is_exploded_variant && p.base_name) {
             if (!groupedMap.has(p.base_name)) {
@@ -1881,6 +1917,7 @@ function renderCustomers() {
                 <td>${c.address || 'N/A'}</td>
                 <td>
                     <button class="btn btn-secondary" style="padding:0.4rem 0.8rem; font-size:0.85rem;" onclick='showCustomerModal(${JSON.stringify(c).replace(/'/g, "&apos;")})'>Edit</button>
+                    <button class="btn btn-secondary" style="padding:0.4rem 0.8rem; font-size:0.85rem;" onclick="renderCustomerStatement(${c.id})">🧾 Statement</button>
                     <button class="btn btn-secondary" style="padding:0.4rem 0.8rem; font-size:0.85rem; color:var(--danger);" onclick="deleteCustomer(${c.id})">Delete</button>
                 </td>
             </tr>`).join('')}
@@ -3954,7 +3991,7 @@ function buildSystemAlerts() {
         const db = getDB();
         const today = new Date(); today.setHours(0, 0, 0, 0);
         (db.products || []).forEach(p => {
-            const min = parseFloat(p.min_stock) || 0;
+            const min = parseFloat(p.low_stock_threshold) || 0;
             const stock = parseFloat(p.stock) || 0;
             if (stock <= 0 && s.out_of_stock !== false) notifyOnce('oos:' + p.id, 'stock', 'Out of stock: ' + p.name, 'Stock is zero. Consider reordering.');
             else if (min > 0 && stock <= min && s.low_stock !== false) notifyOnce('low:' + p.id, 'stock', 'Low stock: ' + p.name, 'Only ' + stock + ' left (min ' + min + ').');
@@ -4051,3 +4088,403 @@ document.addEventListener('keydown', e => {
     }
     if (e.key === 'Escape' && _paletteOpen) closePalette();
 });
+
+// === M5: SUPPLIERS MODULE (purchases, stock intake, payables) ===
+
+function supplierBalance(supplierId) {
+    const db = getDB();
+    let bal = 0;
+    (db.purchases || []).forEach(r => {
+        if (String(r.supplier_id) !== String(supplierId)) return;
+        if (r.type === 'purchase') bal += parseFloat(r.total) || 0;
+        else if (r.type === 'payment') bal -= parseFloat(r.amount) || 0;
+    });
+    return bal;
+}
+function totalPayable() {
+    const db = getDB();
+    return (db.suppliers || []).reduce((s, sup) => s + Math.max(0, supplierBalance(sup.id)), 0);
+}
+
+function renderSuppliers() {
+    const db = getDB();
+    const suppliers = db.suppliers || [];
+    const purchases = (db.purchases || []).slice().sort((a, b) => new Date(b.date || b.created_at) - new Date(a.date || a.created_at));
+    const cur = db.settings.currency || 'Rs';
+    const now = new Date();
+    const monthPurch = purchases.filter(r => r.type === 'purchase' && new Date(r.date || r.created_at).getMonth() === now.getMonth() && new Date(r.date || r.created_at).getFullYear() === now.getFullYear())
+        .reduce((s, r) => s + (parseFloat(r.total) || 0), 0);
+
+    contentArea.innerHTML = `
+        <div class="stats-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1.5rem;">
+            <div class="card" style="padding:1.2rem;"><div style="font-size:0.8rem;color:#64748b;">Suppliers</div><div style="font-size:1.6rem;font-weight:800;">${suppliers.length}</div></div>
+            <div class="card" style="padding:1.2rem;"><div style="font-size:0.8rem;color:#64748b;">Total Payable</div><div style="font-size:1.6rem;font-weight:800;color:#dc2626;">${cur} ${Math.round(totalPayable()).toLocaleString()}</div></div>
+            <div class="card" style="padding:1.2rem;"><div style="font-size:0.8rem;color:#64748b;">Purchases This Month</div><div style="font-size:1.6rem;font-weight:800;">${cur} ${Math.round(monthPurch).toLocaleString()}</div></div>
+        </div>
+        <div class="card">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.8rem;">
+                <h3>🚚 Suppliers</h3>
+                <div style="display:flex;gap:0.6rem;">
+                    <button class="btn btn-secondary" onclick="showPurchaseModal()">+ Record Purchase</button>
+                    <button class="btn btn-primary" onclick="showSupplierModal()">+ Add Supplier</button>
+                </div>
+            </div>
+            <div class="table-wrap"><table><thead><tr><th>Supplier</th><th>Phone</th><th>Address</th><th>Payable</th><th>Actions</th></tr></thead><tbody>
+            ${suppliers.length ? suppliers.map(s => {
+                const bal = supplierBalance(s.id);
+                return `<tr>
+                    <td style="font-weight:600;">${escapeHtml(s.name)}</td>
+                    <td>${escapeHtml(s.phone || '—')}</td>
+                    <td>${escapeHtml(s.address || '—')}</td>
+                    <td style="font-weight:700;color:${bal > 0 ? '#dc2626' : '#059669'};">${cur} ${Math.round(bal).toLocaleString()}</td>
+                    <td style="white-space:nowrap;">
+                        <button class="btn btn-secondary" style="padding:0.35rem 0.7rem;font-size:0.8rem;" onclick='showSupplierModal(${JSON.stringify(s).replace(/'/g, "&#39;")})'>Edit</button>
+                        <button class="btn btn-secondary" style="padding:0.35rem 0.7rem;font-size:0.8rem;" onclick="showPurchaseModal('${s.id}')">Purchase</button>
+                        <button class="btn btn-secondary" style="padding:0.35rem 0.7rem;font-size:0.8rem;" onclick="showPaySupplierModal('${s.id}')">Pay</button>
+                        <button class="btn btn-secondary" style="padding:0.35rem 0.7rem;font-size:0.8rem;color:var(--danger);" onclick="deleteSupplier('${s.id}')">Delete</button>
+                    </td>
+                </tr>`;
+            }).join('') : '<tr><td colspan="5" style="text-align:center;padding:2rem;color:#94a3b8;">No suppliers yet. Add your first supplier to track purchases and payables.</td></tr>'}
+            </tbody></table></div>
+        </div>
+        <div class="card" style="margin-top:1.5rem;">
+            <div class="card-header"><h3>📋 Purchase & Payment History</h3></div>
+            <div class="table-wrap"><table><thead><tr><th>Date</th><th>Type</th><th>Supplier</th><th>Reference</th><th>Details</th><th>Amount</th></tr></thead><tbody>
+            ${purchases.length ? purchases.slice(0, 100).map(r => {
+                const sup = suppliers.find(x => String(x.id) === String(r.supplier_id));
+                const detail = r.type === 'purchase'
+                    ? (r.items || []).map(i => `${escapeHtml(i.name)} × ${i.qty}`).join(', ')
+                    : escapeHtml(r.note || r.method || '');
+                return `<tr>
+                    <td>${new Date(r.date || r.created_at).toLocaleDateString()}</td>
+                    <td><span class="pill" style="${r.type === 'purchase' ? '' : 'background:#ecfdf5;color:#065f46;'}">${r.type === 'purchase' ? 'Purchase' : 'Payment'}</span></td>
+                    <td>${escapeHtml(sup ? sup.name : '—')}</td>
+                    <td>${escapeHtml(r.ref || '—')}</td>
+                    <td style="max-width:280px;">${detail}</td>
+                    <td style="font-weight:700;color:${r.type === 'purchase' ? '#dc2626' : '#059669'};">${r.type === 'purchase' ? '+' : '−'} ${cur} ${Math.round(r.type === 'purchase' ? r.total : r.amount).toLocaleString()}</td>
+                </tr>`;
+            }).join('') : '<tr><td colspan="6" style="text-align:center;padding:2rem;color:#94a3b8;">No purchase history yet.</td></tr>'}
+            </tbody></table></div>
+        </div>
+        <div id="supplier-modal" class="modal hidden"><div class="modal-content" style="max-width:440px;">
+            <h3 id="sup-modal-title" style="margin-bottom:1rem;">Add Supplier</h3>
+            <form id="supplier-form">
+                <input type="hidden" id="sup-id">
+                <div class="form-group"><label>Name</label><input type="text" id="sup-name" class="form-control" required></div>
+                <div class="form-group"><label>Phone</label><input type="text" id="sup-phone" class="form-control"></div>
+                <div class="form-group"><label>Address</label><input type="text" id="sup-address" class="form-control"></div>
+                <div class="form-group"><label>Notes</label><input type="text" id="sup-notes" class="form-control"></div>
+                <div class="modal-actions"><button type="button" class="btn btn-secondary" onclick="document.getElementById('supplier-modal').classList.add('hidden')">Cancel</button><button type="submit" class="btn btn-primary">Save Supplier</button></div>
+            </form>
+        </div></div>
+        <div id="purchase-modal" class="modal hidden"><div class="modal-content" style="max-width:640px;">
+            <h3 style="margin-bottom:1rem;">Record Purchase</h3>
+            <form id="purchase-form">
+                <div class="compact-row">
+                    <div class="form-group"><label>Supplier</label><select id="pur-supplier" class="form-control" required></select></div>
+                    <div class="form-group"><label>Date</label><input type="date" id="pur-date" class="form-control" required></div>
+                    <div class="form-group"><label>Reference / Bill #</label><input type="text" id="pur-ref" class="form-control" placeholder="Optional"></div>
+                </div>
+                <div id="pur-lines"></div>
+                <button type="button" class="btn btn-secondary" onclick="addPurchaseLineRow()" style="margin-bottom:1rem;">+ Add Item</button>
+                <div class="compact-row">
+                    <div class="form-group"><label>Amount Paid Now (${cur})</label><input type="number" id="pur-paid" class="form-control" value="0" min="0"></div>
+                    <div class="form-group"><label>Payment Method</label><select id="pur-method" class="form-control"><option>Cash</option><option>Bank Transfer</option><option>Cheque</option><option>Other</option></select></div>
+                </div>
+                <div id="pur-total-line" style="text-align:right;font-weight:800;font-size:1.1rem;margin-bottom:1rem;"></div>
+                <div class="modal-actions"><button type="button" class="btn btn-secondary" onclick="document.getElementById('purchase-modal').classList.add('hidden')">Cancel</button><button type="submit" class="btn btn-primary">Save Purchase</button></div>
+            </form>
+        </div></div>
+        <div id="pay-supplier-modal" class="modal hidden"><div class="modal-content" style="max-width:420px;">
+            <h3 style="margin-bottom:1rem;">Pay Supplier</h3>
+            <div id="pay-sup-info" style="margin-bottom:1rem;"></div>
+            <form id="pay-supplier-form">
+                <input type="hidden" id="pay-sup-id">
+                <div class="form-group"><label>Amount (${cur})</label><input type="number" id="pay-amount" class="form-control" required min="1"></div>
+                <div class="form-group"><label>Date</label><input type="date" id="pay-date" class="form-control" required></div>
+                <div class="form-group"><label>Method</label><select id="pay-method" class="form-control"><option>Cash</option><option>Bank Transfer</option><option>Cheque</option><option>Other</option></select></div>
+                <div class="form-group"><label>Note</label><input type="text" id="pay-note" class="form-control" placeholder="Optional"></div>
+                <div class="modal-actions"><button type="button" class="btn btn-secondary" onclick="document.getElementById('pay-supplier-modal').classList.add('hidden')">Cancel</button><button type="submit" class="btn btn-primary">Record Payment</button></div>
+            </form>
+        </div></div>`;
+
+    // Supplier form
+    document.getElementById('supplier-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const db = getDB();
+        const id = document.getElementById('sup-id').value;
+        const payload = {
+            name: document.getElementById('sup-name').value.trim(),
+            phone: document.getElementById('sup-phone').value.trim(),
+            address: document.getElementById('sup-address').value.trim(),
+            notes: document.getElementById('sup-notes').value.trim()
+        };
+        if (!payload.name) return showToast('Supplier name is required.', 'error');
+        if (id) {
+            const i = db.suppliers.findIndex(s => String(s.id) === String(id));
+            let prev = '';
+            if (i !== -1) { prev = db.suppliers[i].name; db.suppliers[i] = { ...db.suppliers[i], ...payload }; }
+            saveDB(db); state.suppliers = db.suppliers;
+            logAudit('supplier-update', payload.name, prev, payload.name);
+        } else {
+            payload.id = 'sup' + Date.now().toString(36);
+            payload.created_at = new Date().toISOString();
+            db.suppliers.push(payload);
+            saveDB(db); state.suppliers = db.suppliers;
+            logAudit('supplier-add', payload.name, null, payload.phone);
+        }
+        document.getElementById('supplier-modal').classList.add('hidden');
+        renderSuppliers();
+        showToast(id ? 'Supplier updated.' : 'Supplier added.');
+    });
+
+    // Purchase form
+    document.getElementById('purchase-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        savePurchase();
+    });
+
+    // Payment form
+    document.getElementById('pay-supplier-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        saveSupplierPayment();
+    });
+}
+
+window.showSupplierModal = function(supplier) {
+    document.getElementById('supplier-modal').classList.remove('hidden');
+    document.getElementById('sup-modal-title').textContent = supplier ? 'Edit Supplier' : 'Add Supplier';
+    document.getElementById('sup-id').value = supplier ? supplier.id : '';
+    document.getElementById('sup-name').value = supplier ? supplier.name : '';
+    document.getElementById('sup-phone').value = supplier ? (supplier.phone || '') : '';
+    document.getElementById('sup-address').value = supplier ? (supplier.address || '') : '';
+    document.getElementById('sup-notes').value = supplier ? (supplier.notes || '') : '';
+};
+
+window.deleteSupplier = async function(id) {
+    const bal = supplierBalance(id);
+    if (bal > 0) { showToast('Cannot delete supplier with outstanding payable of ' + Math.round(bal).toLocaleString() + '.', 'error'); return; }
+    const confirmed = await showConfirm('Delete Supplier?', 'This will remove the supplier. Purchase history is kept.');
+    if (!confirmed) return;
+    const db = getDB();
+    const sup = db.suppliers.find(s => String(s.id) === String(id));
+    db.suppliers = db.suppliers.filter(s => String(s.id) !== String(id));
+    saveDB(db); state.suppliers = db.suppliers;
+    if (sup) logAudit('supplier-delete', sup.name, null, null);
+    renderSuppliers();
+    showToast('Supplier deleted.');
+};
+
+window.showPurchaseModal = function(supplierId) {
+    const db = getDB();
+    if (!(db.suppliers || []).length) { showToast('Add a supplier first.', 'error'); return; }
+    document.getElementById('purchase-modal').classList.remove('hidden');
+    document.getElementById('pur-supplier').innerHTML = db.suppliers.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+    if (supplierId) document.getElementById('pur-supplier').value = supplierId;
+    document.getElementById('pur-date').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('pur-ref').value = '';
+    document.getElementById('pur-paid').value = '0';
+    document.getElementById('pur-lines').innerHTML = '';
+    addPurchaseLineRow();
+    updatePurchaseTotal();
+};
+
+window.addPurchaseLineRow = function() {
+    const db = getDB();
+    const wrap = document.getElementById('pur-lines');
+    const row = document.createElement('div');
+    row.className = 'compact-row pur-line';
+    row.style.cssText = 'align-items:flex-end;';
+    row.innerHTML = `
+        <div class="form-group" style="flex:2;"><label>Product</label><select class="form-control pur-product" required>
+            <option value="">-- Select --</option>
+            ${(db.products || []).map(p => `<option value="${p.id}" data-cost="${p.cost_price || 0}">${escapeHtml(p.name)}</option>`).join('')}
+        </select></div>
+        <div class="form-group"><label>Qty</label><input type="number" class="form-control pur-qty" value="1" min="1" required></div>
+        <div class="form-group"><label>Unit Cost</label><input type="number" class="form-control pur-cost" value="0" min="0" required></div>
+        <div class="form-group"><button type="button" class="btn btn-secondary" onclick="this.closest('.pur-line').remove();updatePurchaseTotal();" style="padding:0.6rem 0.8rem;">✕</button></div>`;
+    wrap.appendChild(row);
+    const prodSel = row.querySelector('.pur-product');
+    const costInp = row.querySelector('.pur-cost');
+    prodSel.addEventListener('change', () => { costInp.value = prodSel.selectedOptions[0].getAttribute('data-cost') || 0; updatePurchaseTotal(); });
+    row.querySelector('.pur-qty').addEventListener('input', updatePurchaseTotal);
+    costInp.addEventListener('input', updatePurchaseTotal);
+};
+
+window.updatePurchaseTotal = function() {
+    let total = 0;
+    document.querySelectorAll('.pur-line').forEach(row => {
+        const q = parseFloat(row.querySelector('.pur-qty').value) || 0;
+        const c = parseFloat(row.querySelector('.pur-cost').value) || 0;
+        total += q * c;
+    });
+    const el = document.getElementById('pur-total-line');
+    if (el) el.textContent = 'Total: ' + (getDB().settings.currency || 'Rs') + ' ' + Math.round(total).toLocaleString();
+    return total;
+};
+
+function savePurchase() {
+    const db = getDB();
+    const supplierId = document.getElementById('pur-supplier').value;
+    const sup = db.suppliers.find(s => String(s.id) === String(supplierId));
+    const lines = [];
+    let valid = true;
+    document.querySelectorAll('.pur-line').forEach(row => {
+        const pid = row.querySelector('.pur-product').value;
+        const qty = parseFloat(row.querySelector('.pur-qty').value) || 0;
+        const cost = parseFloat(row.querySelector('.pur-cost').value) || 0;
+        if (!pid || qty <= 0) { valid = false; return; }
+        const p = db.products.find(x => String(x.id) === String(pid));
+        lines.push({ product_id: pid, name: p ? p.name : 'Unknown', qty, cost });
+    });
+    if (!valid || !lines.length) { showToast('Add at least one valid line item.', 'error'); return; }
+    const total = lines.reduce((s, l) => s + l.qty * l.cost, 0);
+    const paid = parseFloat(document.getElementById('pur-paid').value) || 0;
+    const method = document.getElementById('pur-method').value;
+    const date = document.getElementById('pur-date').value || new Date().toISOString().slice(0, 10);
+    const ref = document.getElementById('pur-ref').value.trim();
+
+    // Stock intake + link supplier + update cost
+    lines.forEach(l => {
+        const p = db.products.find(x => String(x.id) === String(l.product_id));
+        if (p) { p.stock = (parseFloat(p.stock) || 0) + l.qty; p.cost_price = l.cost; p.supplier_id = supplierId; }
+    });
+
+    const rec = {
+        id: 'pur' + Date.now().toString(36), type: 'purchase', supplier_id: supplierId,
+        date, ref, items: lines, total, paid,
+        created_at: new Date().toISOString(),
+        created_by: state.currentUser ? (state.currentUser.name || state.currentUser.username) : ''
+    };
+    db.purchases = db.purchases || [];
+    db.purchases.push(rec);
+    if (paid > 0) {
+        db.purchases.push({
+            id: 'pay' + Date.now().toString(36), type: 'payment', supplier_id: supplierId,
+            date, amount: Math.min(paid, total), method, note: 'Paid with purchase' + (ref ? ' (' + ref + ')' : ''),
+            created_at: new Date().toISOString(),
+            created_by: state.currentUser ? (state.currentUser.name || state.currentUser.username) : ''
+        });
+    }
+    saveDB(db);
+    state.purchases = db.purchases; state.products = db.products;
+    logAudit('purchase', (sup ? sup.name : supplierId) + (ref ? ' [' + ref + ']' : ''), null, total);
+    document.getElementById('purchase-modal').classList.add('hidden');
+    renderSuppliers();
+    showToast('Purchase recorded. Stock updated.');
+}
+
+window.showPaySupplierModal = function(supplierId) {
+    const db = getDB();
+    const sup = db.suppliers.find(s => String(s.id) === String(supplierId));
+    if (!sup) return;
+    const bal = supplierBalance(supplierId);
+    document.getElementById('pay-supplier-modal').classList.remove('hidden');
+    document.getElementById('pay-sup-id').value = supplierId;
+    document.getElementById('pay-sup-info').innerHTML =
+        '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:0.8rem;">' +
+        '<div style="font-weight:700;">' + escapeHtml(sup.name) + '</div>' +
+        '<div style="font-size:0.85rem;color:#64748b;">Outstanding payable: <b style="color:#dc2626;">' + (db.settings.currency || 'Rs') + ' ' + Math.round(bal).toLocaleString() + '</b></div></div>';
+    document.getElementById('pay-amount').value = bal > 0 ? Math.round(bal) : '';
+    document.getElementById('pay-date').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('pay-note').value = '';
+};
+
+function saveSupplierPayment() {
+    const db = getDB();
+    const supplierId = document.getElementById('pay-sup-id').value;
+    const sup = db.suppliers.find(s => String(s.id) === String(supplierId));
+    const amount = parseFloat(document.getElementById('pay-amount').value) || 0;
+    if (amount <= 0) { showToast('Enter a valid amount.', 'error'); return; }
+    const bal = supplierBalance(supplierId);
+    if (amount > bal + 0.01) { showToast('Amount exceeds outstanding payable.', 'error'); return; }
+    db.purchases = db.purchases || [];
+    db.purchases.push({
+        id: 'pay' + Date.now().toString(36), type: 'payment', supplier_id: supplierId,
+        date: document.getElementById('pay-date').value || new Date().toISOString().slice(0, 10),
+        amount, method: document.getElementById('pay-method').value,
+        note: document.getElementById('pay-note').value.trim(),
+        created_at: new Date().toISOString(),
+        created_by: state.currentUser ? (state.currentUser.name || state.currentUser.username) : ''
+    });
+    saveDB(db); state.purchases = db.purchases;
+    logAudit('supplier-payment', sup ? sup.name : supplierId, Math.round(bal), Math.round(bal - amount));
+    document.getElementById('pay-supplier-modal').classList.add('hidden');
+    renderSuppliers();
+    showToast('Payment recorded.');
+}
+
+// === M5: BRANDED CUSTOMER STATEMENT ===
+window.renderCustomerStatement = function(customerId) {
+    const db = getDB();
+    const s = db.settings;
+    const cur = s.currency || 'Rs';
+    const c = db.customers.find(x => String(x.id) === String(customerId));
+    if (!c) { showToast('Customer not found.', 'error'); return; }
+    const sales = (db.salesHistory || []).filter(x => String(x.customer_id) === String(customerId))
+        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    const khata = (db.khataRecords || []).filter(x => String(x.customer_id) === String(customerId) || (x.person_name && c.name && x.person_name.toLowerCase() === c.name.toLowerCase()))
+        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+    let rows = [];
+    sales.forEach(x => rows.push({
+        date: x.created_at, desc: 'Invoice ' + (x.invoice_no || ('#' + x.id)) + ' — ' + (x.items || []).length + ' item(s) (' + (x.payment_method || 'Cash') + ')',
+        debit: x.total_amount || 0, credit: 0
+    }));
+    khata.forEach(k => {
+        if ((k.total_amount || 0) > 0 && !k.sale_id) rows.push({ date: k.created_at, desc: 'Khata: ' + (k.description || k.type || ''), debit: k.total_amount || 0, credit: 0 });
+        (k.payments || []).forEach(p => rows.push({ date: p.date, desc: 'Payment received' + (p.note ? ' — ' + p.note : ''), debit: 0, credit: p.amount || 0 }));
+    });
+    rows.sort((a, b) => new Date(a.date) - new Date(b.date));
+    let running = 0;
+    rows = rows.map(r => { running += (r.debit - r.credit); return { ...r, bal: running }; });
+    const totalDebit = rows.reduce((x, r) => x + r.debit, 0);
+    const totalCredit = rows.reduce((x, r) => x + r.credit, 0);
+
+    const logoHtml = s.logo_base64 && s.logo_base64.startsWith('data:image')
+        ? '<img src="' + s.logo_base64 + '" style="max-height:56px;max-width:160px;">'
+        : '<div style="width:52px;height:52px;border-radius:12px;background:' + (s.theme.primary || '#1d4ed8') + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:800;">' + escapeHtml((s.store_name || 'B').charAt(0).toUpperCase()) + '</div>';
+
+    contentArea.innerHTML = `
+    <div class="card" id="statement-card" style="max-width:860px;margin:0 auto;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.8rem;">
+            <button class="btn btn-secondary" onclick="loadView('customers')">← Back to Customers</button>
+            <button class="btn btn-primary" onclick="window.print()">🖨️ Print Statement</button>
+        </div>
+        <div style="display:flex;gap:1rem;align-items:center;border-bottom:3px solid ${s.theme.primary || '#1d4ed8'};padding-bottom:1rem;margin-bottom:1rem;">
+            ${logoHtml}
+            <div>
+                <div style="font-size:1.4rem;font-weight:800;">${escapeHtml(s.store_name || 'Business')}</div>
+                <div style="font-size:0.85rem;color:#64748b;">${escapeHtml(s.store_address || '')}${s.store_contact ? ' • ' + escapeHtml(s.store_contact) : ''}</div>
+            </div>
+            <div style="margin-left:auto;text-align:right;">
+                <div style="font-size:1.1rem;font-weight:800;color:${s.theme.primary || '#1d4ed8'};">STATEMENT</div>
+                <div style="font-size:0.8rem;color:#64748b;">${new Date().toLocaleDateString()}</div>
+            </div>
+        </div>
+        <div style="display:flex;gap:2rem;margin-bottom:1rem;flex-wrap:wrap;">
+            <div><div style="font-size:0.75rem;color:#64748b;text-transform:uppercase;">Customer</div><div style="font-weight:700;">${escapeHtml(c.name)}</div><div style="font-size:0.85rem;color:#64748b;">${escapeHtml(c.phone || '')} ${escapeHtml(c.address || '')}</div></div>
+            <div style="margin-left:auto;text-align:right;">
+                <div style="font-size:0.75rem;color:#64748b;text-transform:uppercase;">Balance Due</div>
+                <div style="font-size:1.5rem;font-weight:800;color:${running > 0 ? '#dc2626' : '#059669'};">${cur} ${Math.round(running).toLocaleString()}</div>
+            </div>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Date</th><th>Description</th><th style="text-align:right;">Debit</th><th style="text-align:right;">Credit</th><th style="text-align:right;">Balance</th></tr></thead><tbody>
+        ${rows.length ? rows.map(r => `<tr>
+            <td>${new Date(r.date).toLocaleDateString()}</td>
+            <td>${escapeHtml(r.desc)}</td>
+            <td style="text-align:right;">${r.debit ? cur + ' ' + Math.round(r.debit).toLocaleString() : '—'}</td>
+            <td style="text-align:right;">${r.credit ? cur + ' ' + Math.round(r.credit).toLocaleString() : '—'}</td>
+            <td style="text-align:right;font-weight:700;">${cur} ${Math.round(r.bal).toLocaleString()}</td>
+        </tr>`).join('') : '<tr><td colspan="5" style="text-align:center;padding:2rem;color:#94a3b8;">No transactions for this customer yet.</td></tr>'}
+        </tbody><tfoot><tr style="font-weight:800;background:#f8fafc;">
+            <td colspan="2">Totals</td>
+            <td style="text-align:right;">${cur} ${Math.round(totalDebit).toLocaleString()}</td>
+            <td style="text-align:right;">${cur} ${Math.round(totalCredit).toLocaleString()}</td>
+            <td style="text-align:right;">${cur} ${Math.round(running).toLocaleString()}</td>
+        </tr></tfoot></table></div>
+        <div style="margin-top:1rem;font-size:0.8rem;color:#64748b;text-align:center;">${escapeHtml(s.receipt_footer || 'Thank you for your business!')}</div>
+    </div>`;
+    pageTitle.innerHTML = 'Customer Statement';
+    logAudit('statement-view', c.name, null, null);
+};
