@@ -3570,7 +3570,7 @@ function startOnboarding(mode) {
 }
 function startAddBusiness() { startOnboarding('add'); }
 
-const OB_STEPS = ['Business', 'Logo', 'Contact', 'Currency', 'Brand Colors', 'Modules', 'Owner Account', 'Done'];
+const OB_STEPS = ['Business Name', 'Business Type', 'Logo', 'Contact', 'Currency', 'Brand Colors', 'Modules', 'Owner Account', 'Done'];
 
 function renderObStep() {
     const root = document.getElementById('onboarding-root');
@@ -3583,9 +3583,9 @@ function renderObStep() {
             '<div class="ob-step-label">Step ' + o.step + ' of ' + OB_STEPS.length + ' — ' + OB_STEPS[o.step - 1] + '</div>' +
             '<div class="ob-body">' + obStepHtml() + '</div>' +
             '<div class="ob-nav">' +
-                (o.step > 1 && o.step < 8 ? '<button class="btn btn-secondary ob-btn" onclick="obBack()">Back</button>' : '<span></span>') +
+                (o.step > 1 && o.step < 9 ? '<button class="btn btn-secondary ob-btn" onclick="obBack()">Back</button>' : '<span></span>') +
                 (_obMode === 'add' ? '<button class="btn btn-secondary ob-btn" onclick="obCancel()">Cancel</button>' : '') +
-                (o.step < 8 ? '<button class="btn btn-primary ob-btn" onclick="obNext()">Continue</button>'
+                (o.step < 9 ? '<button class="btn btn-primary ob-btn" onclick="obNext()">Continue</button>'
                             : '<button class="btn btn-primary ob-btn ob-finish" onclick="finishOnboarding()">Launch My Business</button>') +
             '</div>' +
         '</div></div>';
@@ -3607,18 +3607,20 @@ function obStepHtml() {
     if (o.step === 1) {
         return '<h2 class="ob-title">Name your business</h2><p class="ob-sub">This appears on your dashboard, invoices, receipts and reports.</p>' +
             '<label class="ob-label">Business name *</label>' +
-            '<input id="ob-name" class="ob-input" placeholder="e.g. Al-Noor General Store" value="' + escapeHtml(o.name) + '">' +
-            '<label class="ob-label">Business type</label>' +
+            '<input id="ob-name" class="ob-input" placeholder="e.g. Al-Noor General Store" value="' + escapeHtml(o.name) + '">';
+    }
+    if (o.step === 2) {
+        return '<h2 class="ob-title">What type of business is it?</h2><p class="ob-sub">We set up the right categories and modules for you.</p>' +
             '<div class="ob-grid">' + BUSINESS_TYPES.map(t =>
                 '<button type="button" class="ob-type' + (o.type === t.id ? ' selected' : '') + '" data-type="' + t.id + '" data-name="' + escapeHtml(t.name) + '">' + escapeHtml(t.name) + '</button>').join('') + '</div>';
     }
-    if (o.step === 2) {
+    if (o.step === 3) {
         return '<h2 class="ob-title">Add your logo</h2><p class="ob-sub">Shown on the login screen, sidebar, invoices and receipts. You can skip this — your business initial is used instead.</p>' +
             '<div class="ob-logo-preview" id="ob-logo-preview">' + (o.logo ? '<img src="' + o.logo + '">' : '<div class="brand-badge" style="background:' + o.theme.primary + ';color:' + bestTextOn(o.theme.primary) + ';width:90px;height:90px;font-size:2.5rem">' + escapeHtml(brandInitial(o.name)) + '</div>') + '</div>' +
             '<label class="btn btn-secondary ob-btn" style="cursor:pointer">Upload Logo<input type="file" id="ob-logo-file" accept="image/*" style="display:none"></label>' +
             (o.logo ? '<button class="btn btn-secondary ob-btn" onclick="obClearLogo()" style="margin-left:0.5rem">Remove</button>' : '');
     }
-    if (o.step === 3) {
+    if (o.step === 4) {
         const f = (id, label, val, ph, type) => '<label class="ob-label">' + label + '</label><input id="' + id + '" class="ob-input" type="' + (type || 'text') + '" placeholder="' + escapeHtml(ph || '') + '" value="' + escapeHtml(val) + '">';
         return '<h2 class="ob-title">Contact information</h2><p class="ob-sub">Printed on invoices, receipts and statements.</p>' +
             '<div class="ob-2col">' +
@@ -3629,12 +3631,12 @@ function obStepHtml() {
             '</div>' +
             '<label class="ob-label">Tagline</label><input id="ob-tagline" class="ob-input" placeholder="e.g. Quality you can trust" value="' + escapeHtml(o.tagline) + '">';
     }
-    if (o.step === 4) {
+    if (o.step === 5) {
         return '<h2 class="ob-title">Choose your currency</h2><p class="ob-sub">Used across prices, invoices and reports.</p>' +
             '<div class="ob-grid">' + CURRENCIES.map(c =>
                 '<button type="button" class="ob-cur' + (o.currency === c.code ? ' selected' : '') + '" data-cur="' + escapeHtml(c.code) + '"><b>' + escapeHtml(c.code) + '</b><span>' + escapeHtml(c.name) + '</span></button>').join('') + '</div>';
     }
-    if (o.step === 5) {
+    if (o.step === 6) {
         return '<h2 class="ob-title">Pick your brand colors</h2><p class="ob-sub">The entire app — sidebar, buttons, invoices — adapts instantly. Watch the preview.</p>' +
             '<div class="ob-presets">' + THEME_PRESETS.map(p =>
                 '<button type="button" class="ob-preset' + (o.preset === p.id ? ' selected' : '') + '" data-preset="' + p.id + '" title="' + p.name + '">' +
@@ -3651,19 +3653,19 @@ function obStepHtml() {
                 '<div class="ob-pv-card">Invoice <b style="color:' + o.theme.invoice + '">INV-1001</b></div></div>' +
             '</div>';
     }
-    if (o.step === 6) {
+    if (o.step === 7) {
         return '<h2 class="ob-title">Select modules</h2><p class="ob-sub">Enable only what this business needs. You can change this later in Settings.</p>' +
             '<div class="ob-modules">' + MODULE_DEFS.map(m =>
                 '<label class="ob-module' + (o.modules[m.id] ? ' selected' : '') + '"><input type="checkbox" data-module="' + m.id + '"' + (o.modules[m.id] ? ' checked' : '') + '>' +
                 '<span class="ob-m-icon">' + m.icon + '</span><span class="ob-m-meta"><b>' + m.name + '</b><i>' + m.desc + '</i></span></label>').join('') + '</div>';
     }
-    if (o.step === 7) {
+    if (o.step === 8) {
         return '<h2 class="ob-title">Create the owner account</h2><p class="ob-sub">This account has full access to the business.</p>' +
             '<label class="ob-label">Your name</label><input id="ob-ownername" class="ob-input" placeholder="e.g. Ahmed Khan" value="' + escapeHtml(o.ownerName) + '">' +
             '<label class="ob-label">Username *</label><input id="ob-username" class="ob-input" placeholder="e.g. ahmed" value="' + escapeHtml(o.username) + '">' +
             '<label class="ob-label">Password *</label><input id="ob-password" class="ob-input" type="password" placeholder="Choose a password">';
     }
-    // step 8: summary
+    // step 9: summary
     const typeName = (BUSINESS_TYPES.find(t => t.id === o.type) || {}).name || o.type;
     const modNames = MODULE_DEFS.filter(m => o.modules[m.id]).map(m => m.name).join(', ');
     return '<h2 class="ob-title">Ready to launch 🎉</h2><p class="ob-sub">Here is your new business environment:</p>' +
@@ -3682,14 +3684,14 @@ function obStepHtml() {
 function bindObStep() {
     const o = _ob;
     const q = s => document.querySelector(s);
-    if (o.step === 1) {
+    if (o.step === 2) {
         document.querySelectorAll('.ob-type').forEach(el => el.addEventListener('click', () => {
             o.type = el.getAttribute('data-type'); o.typeName = el.getAttribute('data-name'); o.preset = o.preset;
             document.querySelectorAll('.ob-type').forEach(x => x.classList.remove('selected'));
             el.classList.add('selected');
         }));
     }
-    if (o.step === 2) {
+    if (o.step === 3) {
         const f = q('#ob-logo-file');
         if (f) f.addEventListener('change', e => {
             const file = e.target.files[0]; if (!file) return;
@@ -3698,14 +3700,14 @@ function bindObStep() {
             r.readAsDataURL(file);
         });
     }
-    if (o.step === 4) {
+    if (o.step === 5) {
         document.querySelectorAll('.ob-cur').forEach(el => el.addEventListener('click', () => {
             o.currency = el.getAttribute('data-cur');
             document.querySelectorAll('.ob-cur').forEach(x => x.classList.remove('selected'));
             el.classList.add('selected');
         }));
     }
-    if (o.step === 5) {
+    if (o.step === 6) {
         document.querySelectorAll('.ob-preset').forEach(el => el.addEventListener('click', () => {
             const p = THEME_PRESETS.find(x => x.id === el.getAttribute('data-preset'));
             o.preset = p.id;
@@ -3727,7 +3729,7 @@ function bindObStep() {
             });
         });
     }
-    if (o.step === 6) {
+    if (o.step === 7) {
         document.querySelectorAll('.ob-module input').forEach(el => el.addEventListener('change', () => {
             o.modules[el.getAttribute('data-module')] = el.checked;
             el.closest('.ob-module').classList.toggle('selected', el.checked);
@@ -3751,22 +3753,22 @@ function collectObStep() {
     const o = _ob;
     const v = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
     if (o.step === 1) o.name = v('ob-name');
-    if (o.step === 3) {
+    if (o.step === 4) {
         o.phone = v('ob-phone'); o.whatsapp = v('ob-whatsapp'); o.email = v('ob-email');
         o.website = v('ob-website'); o.address = v('ob-address'); o.city = v('ob-city');
         o.country = v('ob-country'); o.taxNumber = v('ob-tax'); o.tagline = v('ob-tagline');
     }
-    if (o.step === 7) { o.ownerName = v('ob-ownername'); o.username = v('ob-username'); o.password = document.getElementById('ob-password').value; }
+    if (o.step === 8) { o.ownerName = v('ob-ownername'); o.username = v('ob-username'); o.password = document.getElementById('ob-password').value; }
 }
 function obNext() {
     collectObStep();
     const o = _ob;
     if (o.step === 1 && !o.name) { showToast('Please enter your business name.', 'error'); const i = document.getElementById('ob-name'); if (i) i.focus(); return; }
-    if (o.step === 7) {
+    if (o.step === 8) {
         if (!o.username) { showToast('Please choose a username.', 'error'); return; }
         if (!o.password || o.password.length < 3) { showToast('Password must be at least 3 characters.', 'error'); return; }
     }
-    o.step = Math.min(8, o.step + 1);
+    o.step = Math.min(9, o.step + 1);
     renderObStep();
 }
 function obBack() { collectObStep(); _ob.step = Math.max(1, _ob.step - 1); renderObStep(); }
@@ -3775,7 +3777,7 @@ function finishOnboarding() {
     collectObStep();
     const o = _ob;
     if (!o.name) o.name = 'My Business';
-    if (!o.username) { showToast('Please choose a username.', 'error'); o.step = 7; renderObStep(); return; }
+    if (!o.username) { showToast('Please choose a username.', 'error'); o.step = 8; renderObStep(); return; }
     const b = makeBusiness(o.name, { type: o.typeName, theme: o.theme });
     Object.assign(b.settings, {
         tagline: o.tagline, phone: o.phone, whatsapp: o.whatsapp, email: o.email,
