@@ -440,8 +440,12 @@ const MODULE_ROLES = {
     settings: ['owner','admin']
 };
 function roleAllowedModule(role, moduleId) {
-    if (role === 'owner' || role === 'admin') return true;
+    if (isAdminRole(role)) return true;
     return (MODULE_ROLES[moduleId] || []).includes(role);
+}
+// Owner and admin both have full administrative access
+function isAdminRole(role) {
+    return role === 'owner' || role === 'admin';
 }
 // Central gate: business module toggle AND role permission
 function canAccessModule(moduleId) {
@@ -599,7 +603,7 @@ async function loadView(view) {
                 fetchCustomers(); fetchSalesHistory(); fetchKhata(); renderKhata();
                 break;
             case 'financials':
-                if(state.currentUser.role !== 'admin') return;
+                if(!isAdminRole(state.currentUser.role)) return;
                 fetchSalesHistory(); fetchProducts(); fetchExpenses(); fetchKhata();
                 if(!state.financialUnlocked) {
                     showFinancialPasswordModal();
@@ -608,7 +612,7 @@ async function loadView(view) {
                 }
                 break;
             case 'settings':
-                if(state.currentUser.role !== 'admin') return;
+                if(!isAdminRole(state.currentUser.role)) return;
                 renderSettings();
                 break;
             case 'expenses':
@@ -3250,7 +3254,7 @@ window.processWorkerPayment = async function(workerId, type, netSalary = 0, adva
 }
 window.deleteStaff = async function(id) {
     const user = getDB().users.find(u => u.id === id);
-    if(user && user.role === 'admin') {
+    if(user && isAdminRole(user.role)) {
         return showAlert('Action Restricted', 'Administrative accounts cannot be deleted to ensure system access.', '🚫');
     }
     
