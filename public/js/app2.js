@@ -2008,10 +2008,10 @@ window.showReceiptModal = function(saleId) {
     }
 
     // Always update receipt header from current settings
-    const storeName = state.settings.store_name || 'MM Brothers Islamic Mart';
-    document.getElementById('receipt-store-name').innerHTML = storeName.toUpperCase().replace(/\s+/g, ' ').replace(/(BROTHERS?)\s*/i, '$1<br>');
-    document.getElementById('receipt-store-address').textContent = state.settings.store_address || 'Saleem Market Par Hoti, Mardan';
-    document.getElementById('receipt-store-contact').textContent = `Contact: ${state.settings.official_number || state.settings.store_contact || '03025731705'}`;
+    const storeName = state.settings.store_name || getActiveBusiness().name || 'My Business';
+    document.getElementById('receipt-store-name').innerHTML = storeName.toUpperCase().replace(/\s+/g, ' ');
+    document.getElementById('receipt-store-address').textContent = state.settings.store_address || '';
+    document.getElementById('receipt-store-contact').textContent = `Contact: ${state.settings.official_number || state.settings.store_contact || ''}`;
     const dateObj = new Date(sale.created_at);
     const dateStr = dateObj.toLocaleDateString(undefined, { year: 'numeric', month: 'numeric', day: 'numeric' });
     const timeStr = dateObj.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: true });
@@ -2169,7 +2169,8 @@ window.showReceiptModal = function(saleId) {
 function renderSettings() {
     contentArea.innerHTML = `
         <div style="max-width: 1200px; margin: 0 auto; padding: 1rem;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+            ${renderBrandingSection()}
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
                 
                 <!-- Global Store Settings -->
                 <div style="background: white; border-radius: 20px; border: 1px solid #e2e8f0; padding: 2rem; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
@@ -2285,44 +2286,7 @@ function renderSettings() {
                         </form>
                     </div>
 
-                    <!-- Sales Team / Staff -->
-                    <div style="background: white; border-radius: 20px; border: 1px solid #e2e8f0; padding: 2rem; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
-                        <h3 style="margin: 0 0 1.5rem 0; color: #1e293b; display: flex; align-items: center; gap: 10px;">
-                            <span style="font-size: 1.5rem;">👥</span> Sales Team / Staff
-                        </h3>
-                        
-                        <form id="add-staff-form" style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem;">
-                            <input type="text" id="staff-name" placeholder="Full Name" class="form-control" style="flex: 1.5; border-radius: 10px; border: 1px solid #e2e8f0; padding: 0.8rem;" required>
-                            <input type="text" id="staff-phone" placeholder="Phone Number" class="form-control" style="flex: 1.5; border-radius: 10px; border: 1px solid #e2e8f0; padding: 0.8rem;" required>
-                            <button type="submit" class="btn btn-primary" style="flex: 0.7; border-radius: 10px; font-weight: 700; justify-content: center; background: #990000; border: none;">Add</button>
-                        </form>
-
-                        <div style="border: 1px solid #f1f5f9; border-radius: 12px; overflow: hidden;">
-                            <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
-                                <thead style="background: #f8fafc;">
-                                    <tr>
-                                        <th style="padding: 1rem; text-align: left; color: #64748b; font-weight: 700; font-size: 0.75rem; text-transform: uppercase;">Staff Member</th>
-                                        <th style="padding: 1rem; text-align: left; color: #64748b; font-weight: 700; font-size: 0.75rem; text-transform: uppercase;">Contact</th>
-                                        <th style="padding: 1rem; text-align: right; color: #64748b; font-weight: 700; font-size: 0.75rem; text-transform: uppercase;">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${getDB().users.map(u => `
-                                        <tr style="border-top: 1px solid #f1f5f9; ${u.role==='admin' ? 'background: #fffbeb;' : ''}">
-                                            <td style="padding: 1rem;">
-                                                <div style="font-weight: 700; color: #1e293b;">${u.name}</div>
-                                                ${u.role==='admin' ? '<span style="display: inline-block; background: #d97706; color: white; font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 100px; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Administrator</span>' : '<span style="font-size: 0.75rem; color: #94a3b8;">Sales Team</span>'}
-                                            </td>
-                                            <td style="padding: 1rem; color: #64748b;">${u.phone}</td>
-                                            <td style="padding: 1rem; text-align: right;">
-                                                ${u.role!=='admin' ? `<button class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 8px; border: 1px solid #fee2e2; color: #ef4444; background: white;" onclick="deleteStaff(${u.id})">Delete</button>` : '<span style="color: #94a3b8; font-size: 0.75rem; font-style: italic;">Protected</span>'}
-                                            </td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    ${renderUsersSection()}
                 </div>
             </div>
         </div>
@@ -2402,6 +2366,9 @@ function renderSettings() {
         applyGlobalSettings();
         showToast('Settings Saved & Applied!');
     });
+
+    initBrandingSection();
+    initUsersSection();
 }
 
 // Receipt helpers
@@ -4487,4 +4454,250 @@ window.renderCustomerStatement = function(customerId) {
     </div>`;
     pageTitle.innerHTML = 'Customer Statement';
     logAudit('statement-view', c.name, null, null);
+};
+
+// === M6: BRANDING CENTER + USERS & ROLES MANAGER ===
+
+function renderBrandingSection() {
+    const t = getTheme();
+    const presets = THEME_PRESETS.map(p =>
+        `<button type="button" class="brand-preset" data-preset="${p.id}" title="${p.name}" style="width:44px;height:44px;border-radius:12px;border:3px solid ${t.primary === p.colors.primary ? p.colors.primary : 'transparent'};outline:2px solid ${t.primary === p.colors.primary ? p.colors.primary : '#e2e8f0'};outline-offset:2px;background:linear-gradient(135deg, ${p.colors.primary} 50%, ${p.colors.secondary} 50%);cursor:pointer;"></button>`
+    ).join('');
+    const dm = t.darkMode || 'system';
+    return `
+    <div class="card" style="padding:1.6rem;">
+        <h3 style="margin:0 0 0.4rem 0;">🎨 Brand & Appearance</h3>
+        <p style="font-size:0.85rem;color:#64748b;margin:0 0 1.2rem 0;">Your colors apply everywhere — dashboard, invoices, receipts, login screen.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;" class="brand-grid">
+            <div>
+                <div style="font-size:0.78rem;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:0.6rem;">Theme presets</div>
+                <div style="display:flex;gap:0.6rem;flex-wrap:wrap;margin-bottom:1.2rem;">${presets}</div>
+                <div style="font-size:0.78rem;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:0.6rem;">Custom colors</div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.8rem;margin-bottom:1.2rem;">
+                    ${[['primary', 'Primary'], ['secondary', 'Secondary'], ['accent', 'Accent']].map(([k, label]) =>
+                        `<label style="font-size:0.8rem;font-weight:600;">${label}<input type="color" id="brand-${k}" value="${t[k]}" style="display:block;width:100%;height:38px;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;margin-top:4px;"></label>`
+                    ).join('')}
+                </div>
+                <div style="font-size:0.78rem;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:0.6rem;">Appearance</div>
+                <div style="display:flex;gap:0.5rem;" id="brand-darkmode">
+                    ${[['light', '☀️ Light'], ['dark', '🌙 Dark'], ['system', '💻 System']].map(([v, label]) =>
+                        `<button type="button" data-dm="${v}" style="flex:1;padding:0.6rem;border-radius:10px;border:2px solid ${dm === v ? t.primary : '#e2e8f0'};background:${dm === v ? '#eff6ff' : '#fff'};font-weight:700;font-size:0.85rem;cursor:pointer;">${label}</button>`
+                    ).join('')}
+                </div>
+            </div>
+            <div>
+                <div style="font-size:0.78rem;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:0.6rem;">Live preview</div>
+                <div id="branding-preview" style="border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;"></div>
+            </div>
+        </div>
+    </div>`;
+}
+
+function renderBrandingPreview() {
+    const el = document.getElementById('branding-preview');
+    if (!el) return;
+    const t = getTheme();
+    const s = getDB().settings;
+    const btnText = t.buttonText || bestTextOn(t.button);
+    el.innerHTML = `
+        <div style="background:${t.header};color:${bestTextOn(t.header)};padding:0.9rem 1.1rem;display:flex;align-items:center;gap:0.7rem;">
+            <div style="width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-weight:800;">${escapeHtml((s.store_name || 'B').charAt(0))}</div>
+            <div><div style="font-weight:800;font-size:0.95rem;">${escapeHtml(s.store_name || 'Your Business')}</div>
+            <div style="font-size:0.72rem;opacity:0.85;">Invoice ${escapeHtml(s.invoice_prefix || 'INV-')}1001</div></div>
+        </div>
+        <div style="display:flex;">
+            <div style="width:92px;background:${t.sidebar};color:${bestTextOn(t.sidebar)};padding:0.8rem 0.6rem;font-size:0.72rem;display:flex;flex-direction:column;gap:0.55rem;">
+                <div>📊 Dashboard</div><div>🛒 POS</div><div>📦 Inventory</div><div>👥 Customers</div>
+            </div>
+            <div style="flex:1;padding:1rem;background:${t.background};">
+                <div style="background:${t.card};border:1px solid ${t.border};border-radius:10px;padding:0.8rem;margin-bottom:0.8rem;">
+                    <div style="font-size:0.78rem;color:${t.muted};">Total sales today</div>
+                    <div style="font-size:1.3rem;font-weight:800;color:${t.text};">${escapeHtml(s.currency || 'Rs')} 24,500</div>
+                </div>
+                <button style="background:${t.button};color:${btnText};border:none;border-radius:8px;padding:0.6rem 1.2rem;font-weight:700;cursor:pointer;">Complete Sale</button>
+                <button style="background:transparent;color:${t.primary};border:2px solid ${t.primary};border-radius:8px;padding:0.5rem 1rem;font-weight:700;margin-left:0.5rem;cursor:pointer;">Details</button>
+            </div>
+        </div>`;
+}
+
+function initBrandingSection() {
+    document.querySelectorAll('.brand-preset').forEach(b => b.addEventListener('click', () => {
+        applyPreset(b.getAttribute('data-preset'));
+        renderBrandingSectionIntoSettings();
+        showToast('Theme applied.');
+    }));
+    ['primary', 'secondary', 'accent'].forEach(k => {
+        const inp = document.getElementById('brand-' + k);
+        if (inp) inp.addEventListener('input', () => {
+            const db = getDB();
+            db.settings.theme = db.settings.theme || {};
+            db.settings.theme[k] = inp.value;
+            // keep derived tokens in sync
+            if (k === 'primary') { db.settings.theme.button = inp.value; db.settings.theme.header = inp.value; db.settings.theme.invoice = inp.value; }
+            if (k === 'secondary') { db.settings.theme.sidebar = inp.value; }
+            ensureThemeContrast(db.settings.theme);
+            saveDB(db); state.settings = db.settings;
+            applyTheme();
+            renderBrandingPreview();
+        });
+    });
+    document.querySelectorAll('#brand-darkmode [data-dm]').forEach(b => b.addEventListener('click', () => {
+        const db = getDB();
+        db.settings.theme = db.settings.theme || {};
+        db.settings.theme.darkMode = b.getAttribute('data-dm');
+        saveDB(db); state.settings = db.settings;
+        applyTheme();
+        logAudit('branding', 'appearance', null, db.settings.theme.darkMode);
+        renderBrandingSectionIntoSettings();
+    }));
+    renderBrandingPreview();
+}
+function renderBrandingSectionIntoSettings() {
+    // Re-render settings to reflect the new theme selection state
+    if (document.getElementById('branding-preview')) renderSettings();
+}
+
+// --- Users & roles manager ---
+function roleBadge(role) {
+    const colors = { owner: '#7c3aed', admin: '#1d4ed8', manager: '#047857', cashier: '#ea580c', accountant: '#0d9488', inventory: '#a16207', salesperson: '#db2777', staff: '#64748b' };
+    const c = colors[role] || '#64748b';
+    return `<span style="display:inline-block;background:${c}18;color:${c};border:1px solid ${c}45;font-size:0.72rem;font-weight:800;padding:2px 10px;border-radius:100px;text-transform:uppercase;letter-spacing:0.4px;">${ROLE_LABELS[role] || role}</span>`;
+}
+function roleModules(role) {
+    return Object.keys(MODULE_ROLES).filter(m => (MODULE_ROLES[m] || []).includes(role) || role === 'owner' || role === 'admin');
+}
+function renderUsersSection() {
+    const db = getDB();
+    const users = db.users || [];
+    const owners = users.filter(u => u.role === 'owner').length;
+    return `
+    <div class="card" style="padding:1.6rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;flex-wrap:wrap;gap:0.6rem;">
+            <h3 style="margin:0;">👥 Users & Roles</h3>
+            <button class="btn btn-primary" onclick="showUserModal()">+ Add User</button>
+        </div>
+        <p style="font-size:0.85rem;color:#64748b;margin:0 0 1rem 0;">Each user signs in with their own username and password. Roles control which modules they can open.</p>
+        <div class="table-wrap"><table><thead><tr><th>User</th><th>Username</th><th>Role</th><th>Modules</th><th>Actions</th></tr></thead><tbody>
+        ${users.map(u => {
+            const mods = roleModules(u.role);
+            const isSelf = state.currentUser && String(state.currentUser.id) === String(u.id);
+            return `<tr style="${u.role === 'owner' ? 'background:#faf5ff;' : ''}">
+                <td><div style="font-weight:700;">${escapeHtml(u.name || u.username)}${isSelf ? ' <span style="font-size:0.7rem;color:#64748b;">(you)</span>' : ''}</div><div style="font-size:0.78rem;color:#64748b;">${escapeHtml(u.phone || '')}</div></td>
+                <td>${escapeHtml(u.username || '—')}</td>
+                <td>${roleBadge(u.role)}</td>
+                <td style="font-size:0.78rem;color:#64748b;max-width:220px;">${mods.length} modules</td>
+                <td style="white-space:nowrap;">
+                    <button class="btn btn-secondary" style="padding:0.35rem 0.7rem;font-size:0.8rem;" onclick='showUserModal(${JSON.stringify(u).replace(/'/g, "&#39;")})'>Edit</button>
+                    ${!isSelf ? `<button class="btn btn-secondary" style="padding:0.35rem 0.7rem;font-size:0.8rem;color:var(--danger);" onclick="deleteUser('${u.id}')">Delete</button>` : ''}
+                </td>
+            </tr>`;
+        }).join('')}
+        </tbody></table></div>
+        <details style="margin-top:1rem;">
+            <summary style="cursor:pointer;font-weight:700;font-size:0.88rem;color:#1e293b;">🔐 Role permissions matrix</summary>
+            <div class="table-wrap" style="margin-top:0.6rem;"><table><thead><tr><th>Role</th>${Object.keys(MODULE_ROLES).map(m => `<th style="font-size:0.7rem;">${m}</th>`).join('')}</tr></thead><tbody>
+            ${ROLES.map(r => `<tr><td>${roleBadge(r)}</td>${Object.keys(MODULE_ROLES).map(m => `<td style="text-align:center;">${roleModules(r).includes(m) ? '✅' : '—'}</td>`).join('')}</tr>`).join('')}
+            </tbody></table></div>
+        </details>
+        <div id="user-modal" class="modal hidden"><div class="modal-content" style="max-width:440px;">
+            <h3 id="user-modal-title" style="margin-bottom:1rem;">Add User</h3>
+            <form id="user-form">
+                <input type="hidden" id="usr-id">
+                <div class="form-group"><label>Full Name</label><input type="text" id="usr-name" class="form-control" required></div>
+                <div class="compact-row">
+                    <div class="form-group"><label>Username (for login)</label><input type="text" id="usr-username" class="form-control" required></div>
+                    <div class="form-group"><label>Phone</label><input type="text" id="usr-phone" class="form-control"></div>
+                </div>
+                <div class="compact-row">
+                    <div class="form-group"><label>Password</label><input type="text" id="usr-password" class="form-control" placeholder="Leave blank to keep current"></div>
+                    <div class="form-group"><label>Role</label><select id="usr-role" class="form-control">${ROLES.map(r => `<option value="${r}">${ROLE_LABELS[r]}</option>`).join('')}</select></div>
+                </div>
+                <div id="usr-modules-hint" style="font-size:0.8rem;color:#64748b;margin-bottom:1rem;"></div>
+                <div class="modal-actions"><button type="button" class="btn btn-secondary" onclick="document.getElementById('user-modal').classList.add('hidden')">Cancel</button><button type="submit" class="btn btn-primary">Save User</button></div>
+            </form>
+        </div></div>
+    </div>`;
+}
+
+function initUsersSection() {
+    const form = document.getElementById('user-form');
+    if (form) form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const db = getDB();
+        const id = document.getElementById('usr-id').value;
+        const username = document.getElementById('usr-username').value.trim();
+        const role = document.getElementById('usr-role').value;
+        if (!username) return showToast('Username is required.', 'error');
+        // username must be unique
+        const clash = db.users.find(u => u.username.toLowerCase() === username.toLowerCase() && String(u.id) !== String(id));
+        if (clash) return showToast('Username already taken.', 'error');
+        const payload = {
+            name: document.getElementById('usr-name').value.trim(),
+            username,
+            phone: document.getElementById('usr-phone').value.trim(),
+            role
+        };
+        const pw = document.getElementById('usr-password').value;
+        if (id) {
+            const i = db.users.findIndex(u => String(u.id) === String(id));
+            if (i === -1) return;
+            const prev = db.users[i];
+            // guard: cannot demote the last owner
+            if (prev.role === 'owner' && role !== 'owner' && db.users.filter(u => u.role === 'owner').length <= 1) {
+                return showToast('Cannot demote the last owner.', 'error');
+            }
+            db.users[i] = normalizeUser({ ...prev, ...payload });
+            if (pw) db.users[i].password = pw;
+            saveDB(db);
+            logAudit('user-update', username, prev.role, role);
+            showToast('User updated.');
+        } else {
+            const nu = normalizeUser({ id: 'u_' + Date.now().toString(36), ...payload, password: pw || '1234' });
+            db.users.push(nu);
+            saveDB(db);
+            logAudit('user-add', username, null, role);
+            showToast(pw ? 'User added.' : 'User added with default password 1234.');
+        }
+        // keep current session user fresh
+        if (state.currentUser) {
+            const me = db.users.find(u => String(u.id) === String(state.currentUser.id));
+            if (me) state.currentUser = me;
+        }
+        document.getElementById('user-modal').classList.add('hidden');
+        renderSettings();
+    });
+    const roleSel = document.getElementById('usr-role');
+    if (roleSel) roleSel.addEventListener('change', () => {
+        const hint = document.getElementById('usr-modules-hint');
+        if (hint) hint.textContent = 'Can access: ' + roleModules(roleSel.value).join(', ');
+    });
+}
+
+window.showUserModal = function(user) {
+    document.getElementById('user-modal').classList.remove('hidden');
+    document.getElementById('user-modal-title').textContent = user ? 'Edit User' : 'Add User';
+    document.getElementById('usr-id').value = user ? user.id : '';
+    document.getElementById('usr-name').value = user ? (user.name || '') : '';
+    document.getElementById('usr-username').value = user ? (user.username || '') : '';
+    document.getElementById('usr-phone').value = user ? (user.phone || '') : '';
+    document.getElementById('usr-password').value = '';
+    document.getElementById('usr-password').placeholder = user ? 'Leave blank to keep current' : 'Default: 1234';
+    document.getElementById('usr-role').value = user ? (user.role || 'staff') : 'staff';
+    const hint = document.getElementById('usr-modules-hint');
+    if (hint) hint.textContent = 'Can access: ' + roleModules(document.getElementById('usr-role').value).join(', ');
+};
+
+window.deleteUser = async function(id) {
+    const db = getDB();
+    const u = db.users.find(x => String(x.id) === String(id));
+    if (!u) return;
+    if (state.currentUser && String(state.currentUser.id) === String(id)) { showToast('You cannot delete your own account.', 'error'); return; }
+    if (u.role === 'owner' && db.users.filter(x => x.role === 'owner').length <= 1) { showToast('Cannot delete the last owner.', 'error'); return; }
+    const confirmed = await showConfirm('Delete User?', `Remove ${u.name || u.username}? They will no longer be able to sign in.`);
+    if (!confirmed) return;
+    db.users = db.users.filter(x => String(x.id) !== String(id));
+    saveDB(db);
+    logAudit('user-delete', u.username, u.role, null);
+    renderSettings();
+    showToast('User deleted.');
 };

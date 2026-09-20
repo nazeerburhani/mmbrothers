@@ -2060,3 +2060,6 @@ body.dark-mode input, body.dark-mode select, body.dark-mode textarea { backgroun
 .palette-ico { font-size: 1.15rem; width: 1.6rem; text-align: center; }
 .palette-empty { padding: 1.5rem; text-align: center; color: #94a3b8; }
 .palette-hint { padding: 0.55rem 1rem; font-size: 0.72rem; color: #94a3b8; border-top: 1px solid #f1f5f9; text-align: center; }
+
+/* === M6: Branding center responsive === */
+@media (max-width: 760px) { .brand-grid { grid-template-columns: 1fr !important; } }
