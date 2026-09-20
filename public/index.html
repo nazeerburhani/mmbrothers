@@ -52,6 +52,9 @@
                 <a href="#notes" class="nav-item" data-view="notes" data-role="salesman,manager,admin">
                     <i>📝</i> Notes & Reminders
                 </a>
+                <a href="#audit" class="nav-item" data-view="audit" data-role="admin">
+                    <i>🕘</i> Audit Log
+                </a>
                 <a href="#settings" class="nav-item" data-view="settings" data-role="admin">
                     <i>⚙️</i> Admin Settings
                 </a>
@@ -134,6 +137,7 @@
                 
                 <div style="border-top: 2px solid #000; padding-top: 10px;">
                     <!-- Total Section -->
+                    <div id="receipt-tax-line" style="display:none;"></div>
                     <div style="display: flex; justify-content: space-between; align-items: baseline; font-size: 22px; font-weight: 900; margin-top: 5px; padding: 5px 0;">
                         <span>TOTAL</span>
                         <span id="receipt-total-amt" style="border-bottom: 4px double #000; padding-bottom: 2px;">Rs 0</span>
@@ -219,6 +223,9 @@
     <!-- Branded login / onboarding / command palette roots (rendered by app2.js) -->
     <div id="login-screen" class="login-screen" style="display:none;"></div>
     <div id="onboarding-root"></div>
+    <div id="command-palette-root"></div>
+
+    <!-- Command palette root -->
     <div id="command-palette-root"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>

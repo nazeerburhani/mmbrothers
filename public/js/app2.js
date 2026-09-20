@@ -8,7 +8,7 @@ const DB_KEY = 'mm_brothers_data';
 let mockDB = null;
 
 // Collections isolated per business tenant
-const TENANT_COLLECTIONS = ['products','customers','salesHistory','categories','expenses','workers','attarProducts','bottles','khataRecords','khataAdvance','khataAdvanceHistory','suppliers','purchases','audit','notifications','customFields'];
+const TENANT_COLLECTIONS = ['products','customers','salesHistory','categories','expenses','workers','workerAdvances','attarProducts','bottles','khataRecords','khataAdvance','khataAdvanceHistory','khataReminders','personalReminders','reminderLog','suppliers','purchases','audit','notifications','customFields'];
 
 function emptyTenantData() {
     const d = {};
@@ -244,6 +244,7 @@ function loadTenantIntoState(db) {
     state.attarProducts = db.attarProducts || [];
     state.bottles = db.bottles || [];
     state.khataRecords = db.khataRecords || [];
+    state.khataReminders = db.khataReminders || [];
     state.suppliers = db.suppliers || [];
     state.purchases = db.purchases || [];
     state.audit = db.audit || [];
@@ -272,7 +273,7 @@ function renderBusinessSwitcher() {
 // Global State
 let state = {
     products: [], customers: [], salesHistory: [], cart: [], stats: {}, categories: [], expenses: [], workers: [],
-    attarProducts: [], bottles: [], khataRecords: [],
+    attarProducts: [], bottles: [], khataRecords: [], khataReminders: [],
     suppliers: [], purchases: [], audit: [], notifications: [], customFields: null,
     timeFilter: 'all', inventorySort: 'name', inventoryFilter: 'all',
     currentUser: null,
@@ -602,6 +603,11 @@ async function loadView(view) {
                 break;
             case 'notes':
                 renderNotes();
+                break;
+            case 'audit':
+                state.audit = getDB().audit || [];
+                pageTitle.innerHTML = 'Audit Log';
+                renderAuditView();
                 break;
         }
     } catch(err) {
@@ -1635,6 +1641,13 @@ window.renderCheckoutReview = function() {
         return s;
     }, 0);
 
+    // Tax breakdown
+    const subtotal = total;
+    const disc = totalSavings;
+    const taxRate = parseFloat(db.settings.tax_rate) || 0;
+    const taxAmt = Math.max(0, subtotal - disc) * taxRate / 100;
+    const grandTotal = Math.max(0, subtotal - disc) + taxAmt;
+
     container.innerHTML = `
         <div style="background: #f8fafc; padding: 1.2rem; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 1.5rem; display: grid; grid-template-columns: 1fr 1.5fr; gap: 1rem;">
             <div>
@@ -1686,9 +1699,14 @@ window.renderCheckoutReview = function() {
             <span style="font-size: 1.1rem; font-weight: 800; color: #059669;">- Rs ${totalSavings.toLocaleString()}</span>
         </div>` : ''}
 
-        <div style="margin-top: ${totalSavings > 0 ? '0.8rem' : '1.5rem'}; display: flex; justify-content: space-between; align-items: center; background: #f0f9ff; padding: 1rem 1.5rem; border-radius: 12px; border: 1px solid #bae6fd;">
-            <span style="font-size: 1.1rem; font-weight: 600; color: #0369a1;">Order Total</span>
-            <span style="font-size: 1.5rem; font-weight: 900; color: #0369a1;">Rs ${total.toLocaleString()}</span>
+        <div style="margin-top: ${totalSavings > 0 ? '0.8rem' : '1.5rem'}; background: #f0f9ff; padding: 1rem 1.5rem; border-radius: 12px; border: 1px solid #bae6fd;">
+            <div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#0369a1;margin-bottom:0.3rem;"><span>Subtotal</span><span style="font-weight:700;">Rs ${subtotal.toLocaleString()}</span></div>
+            ${disc > 0 ? '<div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#065f46;margin-bottom:0.3rem;"><span>Discount</span><span style="font-weight:700;">- Rs ' + disc.toLocaleString() + '</span></div>' : ''}
+            ${taxRate > 0 ? '<div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#0369a1;margin-bottom:0.3rem;"><span>Tax (' + taxRate + '%)</span><span style="font-weight:700;">Rs ' + Math.round(taxAmt).toLocaleString() + '</span></div>' : ''}
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.5rem;padding-top:0.7rem;border-top:2px dashed #bae6fd;">
+                <span style="font-size: 1.1rem; font-weight: 600; color: #0369a1;">Order Total</span>
+                <span style="font-size: 1.5rem; font-weight: 900; color: #0369a1;">Rs ${Math.round(grandTotal).toLocaleString()}</span>
+            </div>
         </div>
     `;
 }
@@ -1703,10 +1721,10 @@ window.confirmCheckout = function() {
 
     const payMethod = document.getElementById('payment-method')?.value || 'Cash';
     const db = getDB();
-    let totAmt = 0, totProf = 0;
+    const t = cartTotals();
+    let totProf = 0;
 
     state.cart.forEach(item => {
-        totAmt += item.price * item.quantity;
         totProf += (item.price - item.cost) * item.quantity;
         const pi = db.products.findIndex(p => p.id === item.product_id);
         if(pi !== -1) db.products[pi].stock -= item.quantity;
@@ -1714,12 +1732,16 @@ window.confirmCheckout = function() {
 
     const saleRecord = {
         id: Date.now(), customer_id: customerId, payment_method: payMethod,
-        total_amount: totAmt, profit: totProf, created_at: new Date().toISOString(), items: [...state.cart],
+        invoice_no: nextInvoiceNo(db),
+        subtotal: t.subtotal, discount: t.discount,
+        tax_rate: t.taxRate, tax_amount: t.tax,
+        total_amount: t.total, profit: totProf, created_at: new Date().toISOString(), items: [...state.cart],
         salesman_id: parseInt(document.getElementById('cart-salesman-select')?.value || state.currentUser.id)
     };
 
     db.salesHistory.push(saleRecord);
     saveDB(db);
+    logAudit('sale', saleRecord.invoice_no, null, t.total + ' via ' + payMethod);
     showToast('Sale Completed Successfully!');
 
     showReceiptModal(saleRecord.id);
@@ -1966,7 +1988,7 @@ window.showReceiptModal = function(saleId) {
         else payLabel = 'Khata (Udhaar)';
     }
     document.getElementById('receipt-method').textContent = payLabel;
-    document.getElementById('receipt-id').textContent = `#${sale.id}`;
+    document.getElementById('receipt-id').textContent = sale.invoice_no ? ('#' + sale.invoice_no) : ('#' + sale.id);
     document.getElementById('receipt-salesman').textContent = salesman.name;
     
     document.getElementById('r-cust-name').textContent = customer.name;
@@ -1999,6 +2021,19 @@ window.showReceiptModal = function(saleId) {
     </div>` : '';
 
     document.getElementById('receipt-items').innerHTML = (itemsHtml || '<div style="text-align:center; padding:10px;">No items found</div>') + savingsHtml;
+
+    // Tax breakdown on receipt
+    const taxLine = document.getElementById('receipt-tax-line');
+    if (taxLine) {
+        if (sale.tax_rate > 0 && sale.tax_amount > 0) {
+            taxLine.style.display = 'block';
+            taxLine.innerHTML = '<div style="display:flex;justify-content:space-between;font-size:13px;color:#000;padding:2px 0;">' +
+                '<span>Tax (' + sale.tax_rate + '%)</span><span>Rs ' + Math.round(sale.tax_amount).toLocaleString() + '</span></div>';
+        } else {
+            taxLine.style.display = 'none';
+            taxLine.innerHTML = '';
+        }
+    }
     document.getElementById('receipt-total-amt').textContent = `${state.settings.currency || 'Rs'} ${(sale.total_amount || 0).toLocaleString()}`;
 
     // Dynamic receipt footer text from settings
@@ -3435,6 +3470,7 @@ function doLogin() {
     setSession(user.id);
     state.currentUser = user;
     enterApp();
+    if (typeof logAudit === 'function') logAudit('sign-in', user.username, null, 'login');
     showToast('Welcome back, ' + (user.name || user.username) + '!');
 }
 function logout() {
@@ -3457,7 +3493,9 @@ function enterApp() {
     applyTheme();
     renderBusinessSwitcher();
     setupNavigation();
+    if (typeof integrateNotifications === 'function') integrateNotifications();
     if (typeof buildSystemAlerts === 'function') buildSystemAlerts();
+    if (typeof updateNotifBadge === 'function') updateNotifBadge();
 }
 
 // === M3: ONBOARDING WIZARD + ADD-BUSINESS FLOW ===
@@ -3757,3 +3795,259 @@ function finishOnboarding() {
     enterApp();
     showToast('Welcome to ' + b.name + '! Your business is ready.');
 }
+
+// === M4: AUDIT LOG, NOTIFICATIONS, COMMAND PALETTE, POS TAX + INVOICE NUMBERS ===
+
+// --- Cart totals with tax ---
+function cartTotals() {
+    const db = getDB();
+    const subtotal = state.cart.reduce((s, i) => s + (i.price * i.quantity), 0);
+    const discount = state.cart.reduce((s, item) => {
+        if (item.original_price && item.price < item.original_price) return s + ((item.original_price - item.price) * item.quantity);
+        return s;
+    }, 0);
+    const taxRate = parseFloat(db.settings.tax_rate) || 0;
+    const taxable = Math.max(0, subtotal - discount);
+    const tax = taxable * taxRate / 100;
+    return { subtotal, discount, taxRate, tax, total: taxable + tax, currency: db.settings.currency || 'Rs' };
+}
+function nextInvoiceNo(db) {
+    db = db || getDB();
+    const prefix = db.settings.invoice_prefix || 'INV-';
+    const seq = db.settings.invoice_seq || 1001;
+    db.settings.invoice_seq = seq + 1;
+    try { saveDB(db); } catch (e) {}
+    return prefix + seq;
+}
+
+// --- Audit log ---
+function logAudit(action, record, prev, next) {
+    try {
+        const db = getDB();
+        db.audit = db.audit || [];
+        db.audit.unshift({
+            id: 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+            ts: new Date().toISOString(),
+            user: state.currentUser ? (state.currentUser.name || state.currentUser.username) : 'System',
+            userId: state.currentUser ? state.currentUser.id : null,
+            action: action || '', record: record || '',
+            prev: (prev === undefined ? null : prev), next: (next === undefined ? null : next)
+        });
+        if (db.audit.length > 2000) db.audit.length = 2000;
+        saveDB(db);
+        state.audit = db.audit;
+    } catch (e) {}
+}
+function auditValue(v) {
+    if (v === null || v === undefined || v === '') return '—';
+    if (typeof v === 'object') { try { return JSON.stringify(v).slice(0, 120); } catch (e) { return '—'; } }
+    return String(v).slice(0, 120);
+}
+function renderAuditView() {
+    const list = (state.audit || []).slice(0, 500);
+    contentArea.innerHTML =
+        '<div class="card"><div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">' +
+        '<h3>🕘 Audit Log</h3><button class="btn btn-secondary" onclick="exportAuditCsv()">Export CSV</button></div>' +
+        '<div class="table-wrap"><table><thead><tr><th>Date</th><th>User</th><th>Action</th><th>Record</th><th>Previous</th><th>New</th></tr></thead><tbody>' +
+        (list.length ? list.map(a =>
+            '<tr><td>' + new Date(a.ts).toLocaleString() + '</td><td>' + escapeHtml(a.user) + '</td>' +
+            '<td><span class="pill">' + escapeHtml(a.action) + '</span></td><td>' + escapeHtml(a.record) + '</td>' +
+            '<td>' + escapeHtml(auditValue(a.prev)) + '</td><td>' + escapeHtml(auditValue(a.next)) + '</td></tr>'
+        ).join('') : '<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:2rem">No audit entries yet.</td></tr>') +
+        '</tbody></table></div></div>';
+}
+function exportAuditCsv() {
+    const rows = [['Date', 'User', 'Action', 'Record', 'Previous', 'New']];
+    (state.audit || []).forEach(a => rows.push([new Date(a.ts).toLocaleString(), a.user, a.action, a.record, auditValue(a.prev), auditValue(a.next)]));
+    const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'audit-log.csv';
+    a.click();
+    showToast('Audit log exported.');
+}
+
+// --- Notifications ---
+function notify(type, title, message, dedupKey) {
+    try {
+        const db = getDB();
+        db.notifications = db.notifications || [];
+        db.notifications.unshift({
+            id: 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+            ts: new Date().toISOString(), type, title, message, read: false,
+            dedup: dedupKey || null
+        });
+        if (db.notifications.length > 500) db.notifications.length = 500;
+        saveDB(db);
+        state.notifications = db.notifications;
+        updateNotifBadge();
+    } catch (e) {}
+}
+function notifyOnce(key, type, title, message) {
+    // Dedupe: one notification per key per day
+    const dk = key + ':' + new Date().toISOString().slice(0, 10);
+    const db = getDB();
+    if ((db.notifications || []).some(n => n.dedup === dk)) return;
+    notify(type, title, message, dk);
+}
+function unreadNotifCount() {
+    const db = getDB();
+    const n = (db.notifications || []).filter(x => !x.read).length;
+    const now = new Date(); now.setHours(0, 0, 0, 0);
+    const r = (db.khataReminders || []).filter(x => x.status === 'Pending' && new Date(x.reminder_date) <= now).length;
+    return n + r;
+}
+function updateNotifBadge() {
+    const badge = document.getElementById('reminder-bell-badge');
+    if (!badge) return;
+    const c = unreadNotifCount();
+    badge.style.display = c > 0 ? 'block' : 'none';
+    badge.textContent = c > 99 ? '99+' : c;
+}
+function markNotifRead(id) {
+    const db = getDB();
+    const n = (db.notifications || []).find(x => x.id === id);
+    if (n) { n.read = true; saveDB(db); state.notifications = db.notifications; }
+    updateNotifBadge();
+    if (window.renderReminderDropdown) window.renderReminderDropdown();
+}
+function markAllNotifRead() {
+    const db = getDB();
+    (db.notifications || []).forEach(x => x.read = true);
+    saveDB(db); state.notifications = db.notifications;
+    updateNotifBadge();
+    if (window.renderReminderDropdown) window.renderReminderDropdown();
+}
+function notifDropdownHtml() {
+    const list = (getDB().notifications || []).slice(0, 15);
+    if (!list.length) return '';
+    return '<div style="padding:0.9rem 1rem;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">' +
+        '<b style="font-size:0.9rem">🔔 Notifications</b><button onclick="markAllNotifRead()" style="border:none;background:none;color:#1d4ed8;font-size:0.78rem;cursor:pointer;font-weight:600">Mark all read</button></div>' +
+        list.map(n => '<div style="padding:0.8rem 1rem;border-bottom:1px solid #f1f5f9;' + (n.read ? 'opacity:0.6' : '') + '">' +
+            '<div style="display:flex;justify-content:space-between;gap:0.5rem"><b style="font-size:0.85rem">' + escapeHtml(n.title) + '</b>' +
+            (!n.read ? '<button onclick="markNotifRead(\'' + n.id + '\')" style="border:none;background:none;color:#1d4ed8;font-size:0.75rem;cursor:pointer;white-space:nowrap">Mark read</button>' : '') + '</div>' +
+            '<div style="font-size:0.8rem;color:#64748b">' + escapeHtml(n.message) + '</div>' +
+            '<div style="font-size:0.7rem;color:#94a3b8;margin-top:2px">' + new Date(n.ts).toLocaleString() + '</div></div>').join('');
+}
+function integrateNotifications() {
+    if (window._notifIntegrated) return;
+    window._notifIntegrated = true;
+    // Prepend notifications section into the reminder dropdown
+    const orig = window.renderReminderDropdown;
+    window.renderReminderDropdown = function() {
+        if (orig) orig.call(window);
+        const dd = document.getElementById('reminder-dropdown');
+        if (dd) dd.innerHTML = notifDropdownHtml() + dd.innerHTML;
+    };
+    // Keep the badge showing combined unread count even when khata bell refreshes
+    const origBell = window.updateReminderBell;
+    window.updateReminderBell = function() {
+        if (origBell) origBell.call(window);
+        updateNotifBadge();
+    };
+}
+// System alerts: stock, expiry, payables
+function buildSystemAlerts() {
+    try {
+        const s = (state.settings && state.settings.notifications) || {};
+        const db = getDB();
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        (db.products || []).forEach(p => {
+            const min = parseFloat(p.min_stock) || 0;
+            const stock = parseFloat(p.stock) || 0;
+            if (stock <= 0 && s.out_of_stock !== false) notifyOnce('oos:' + p.id, 'stock', 'Out of stock: ' + p.name, 'Stock is zero. Consider reordering.');
+            else if (min > 0 && stock <= min && s.low_stock !== false) notifyOnce('low:' + p.id, 'stock', 'Low stock: ' + p.name, 'Only ' + stock + ' left (min ' + min + ').');
+            if (p.expiry && s.expiry !== false) {
+                const exp = new Date(p.expiry); exp.setHours(0, 0, 0, 0);
+                const days = Math.round((exp - today) / 86400000);
+                if (days >= 0 && days <= 30) notifyOnce('exp:' + p.id, 'expiry', 'Expiring soon: ' + p.name, 'Expires in ' + days + ' day(s).');
+            }
+        });
+        const pendingKhata = (db.khataRecords || []).filter(r => (r.status || '').toLowerCase() !== 'paid').length;
+        if (pendingKhata > 0 && s.khata !== false) notifyOnce('khata-pending', 'khata', pendingKhata + ' pending khata record(s)', 'There are unpaid credit records to follow up.');
+        updateNotifBadge();
+    } catch (e) {}
+}
+
+// --- Command palette (Ctrl/⌘+K) ---
+const PALETTE_COMMANDS = [
+    { id: 'new-sale', title: 'New Sale', keywords: 'pos checkout sell', icon: '🛒', module: 'pos', run: () => goView('pos') },
+    { id: 'new-product', title: 'New Product', keywords: 'inventory add item', icon: '📦', module: 'inventory', run: () => { goView('inventory'); setTimeout(() => { const b = document.querySelector('[onclick*="ProductModal"], .add-product-btn'); if (b) b.click(); }, 400); } },
+    { id: 'new-customer', title: 'New Customer', keywords: 'crm add client', icon: '👥', module: 'customers', run: () => goView('customers') },
+    { id: 'new-purchase', title: 'New Purchase', keywords: 'supplier stock buy', icon: '🚚', module: 'suppliers', run: () => goView('suppliers') },
+    { id: 'add-expense', title: 'Add Expense', keywords: 'spend cost', icon: '💸', module: 'expenses', run: () => goView('expenses') },
+    { id: 'create-invoice', title: 'Create Invoice', keywords: 'bill receipt', icon: '🧾', module: 'pos', run: () => goView('pos') },
+    { id: 'go-dashboard', title: 'Go to Dashboard', keywords: 'home overview', icon: '📊', module: 'dashboard', run: () => goView('dashboard') },
+    { id: 'go-reports', title: 'Go to Reports', keywords: 'analytics', icon: '📈', module: 'reports', run: () => goView('reports') },
+    { id: 'go-audit', title: 'Open Audit Log', keywords: 'history activity', icon: '🕘', module: 'audit', run: () => { renderAuditView(); pageTitle.innerHTML = 'Audit Log'; } },
+    { id: 'toggle-dark', title: 'Toggle Dark Mode', keywords: 'theme night', icon: '🌙', run: () => {
+        const db = getDB(); const t = db.settings.theme.darkMode || 'system';
+        db.settings.theme.darkMode = t === 'dark' ? 'light' : 'dark'; saveDB(db); applyTheme(); showToast('Theme: ' + db.settings.theme.darkMode);
+    } },
+    { id: 'add-business', title: 'Add New Business', keywords: 'tenant company', icon: '🏢', run: () => startAddBusiness() },
+    { id: 'logout', title: 'Log Out', keywords: 'sign out exit', icon: '🚪', run: () => logout() }
+];
+let _paletteOpen = false, _paletteSel = 0;
+function goView(view) {
+    const el = document.querySelector('.nav-item[data-view="' + view + '"]');
+    if (el && !el.classList.contains('hidden')) el.click();
+    else showToast('Module not available for your role.', 'error');
+}
+function paletteCommands(q) {
+    q = (q || '').toLowerCase().trim();
+    return PALETTE_COMMANDS.filter(c => {
+        if (c.module && !canAccessModule(c.module)) return false;
+        if (!q) return true;
+        return (c.title + ' ' + c.keywords).toLowerCase().includes(q);
+    });
+}
+function openPalette() {
+    if (!state.currentUser) return;
+    _paletteOpen = true; _paletteSel = 0;
+    let root = document.getElementById('command-palette-root');
+    root.innerHTML =
+        '<div class="palette-overlay" id="palette-overlay"><div class="palette-box">' +
+        '<input id="palette-input" class="palette-input" placeholder="Type a command or search…  (Esc to close)" autocomplete="off">' +
+        '<div id="palette-list" class="palette-list"></div>' +
+        '<div class="palette-hint">↑↓ navigate • Enter run • Ctrl+K toggle</div>' +
+        '</div></div>';
+    const input = document.getElementById('palette-input');
+    const render = () => {
+        const cmds = paletteCommands(input.value);
+        _paletteSel = Math.min(_paletteSel, Math.max(0, cmds.length - 1));
+        document.getElementById('palette-list').innerHTML = cmds.length
+            ? cmds.map((c, i) => '<div class="palette-item' + (i === _paletteSel ? ' sel' : '') + '" data-i="' + i + '"><span class="palette-ico">' + c.icon + '</span>' + escapeHtml(c.title) + '</div>').join('')
+            : '<div class="palette-empty">No matching commands.</div>';
+        document.querySelectorAll('.palette-item').forEach(el => el.addEventListener('click', () => { runPalette(cmds[+el.getAttribute('data-i')]); }));
+        input._cmds = cmds;
+    };
+    input.addEventListener('input', () => { _paletteSel = 0; render(); });
+    input.addEventListener('keydown', e => {
+        const cmds = input._cmds || [];
+        if (e.key === 'ArrowDown') { e.preventDefault(); _paletteSel = Math.min(cmds.length - 1, _paletteSel + 1); render(); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); _paletteSel = Math.max(0, _paletteSel - 1); render(); }
+        else if (e.key === 'Enter') { const c = cmds[_paletteSel]; if (c) runPalette(c); }
+        else if (e.key === 'Escape') closePalette();
+    });
+    document.getElementById('palette-overlay').addEventListener('click', e => { if (e.target.id === 'palette-overlay') closePalette(); });
+    render();
+    setTimeout(() => { const i = document.getElementById('palette-input'); if (i) i.focus(); }, 30);
+}
+function runPalette(cmd) {
+    closePalette();
+    try { cmd.run(); } catch (e) { console.error(e); }
+}
+function closePalette() {
+    _paletteOpen = false;
+    const root = document.getElementById('command-palette-root');
+    if (root) root.innerHTML = '';
+}
+function togglePalette() { _paletteOpen ? closePalette() : openPalette(); }
+document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        togglePalette();
+    }
+    if (e.key === 'Escape' && _paletteOpen) closePalette();
+});
