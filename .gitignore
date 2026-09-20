@@ -1,0 +1,7 @@
+node_modules/
+dist/
+win-unpacked/
+*.exe
+*.blockmap
+*.db
+.env

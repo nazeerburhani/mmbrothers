@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MM Brothers Islamic Mart</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+    <!-- Chart.js for charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="css/style2.css?v=8">
+</head>
+<body>
+    <!-- Main App Structure -->
+    <div id="app" class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <label for="sidebar-logo-upload" style="cursor:pointer;" title="Click to upload logo">
+                    <img src="logo.jpg" alt="Logo" class="brand-logo-img global-logo-img" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'90\' height=\'90\'><rect width=\'90\' height=\'90\' fill=\'%23f1f5f9\'/><text x=\'45\' y=\'50\' font-size=\'24\' text-anchor=\'middle\' fill=\'%23cbd5e1\'>Logo</text></svg>'">
+                </label>
+                <input type="file" id="sidebar-logo-upload" accept="image/*" style="display:none;">
+                <h2 class="global-store-name">MM Brothers <span>Islamic Mart</span></h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#dashboard" class="nav-item active" data-view="dashboard" data-role="manager,admin">
+                    <i>📊</i> Dashboard
+                </a>
+                <a href="#pos" class="nav-item" data-view="pos" data-role="salesman,manager,admin">
+                    <i>🛒</i> POS System
+                </a>
+                <a href="#inventory" class="nav-item" data-view="inventory" data-role="manager,admin">
+                    <i>📦</i> Inventory
+                </a>
+                <a href="#reports" class="nav-item" data-view="reports" data-role="manager,admin">
+                    <i>📈</i> Reports
+                </a>
+                <a href="#customers" class="nav-item" data-view="customers" data-role="salesman,manager,admin">
+                    <i>👥</i> Customers
+                </a>
+                <a href="#khata" class="nav-item" data-view="khata" data-role="manager,admin">
+                    <i>📒</i> Khata Book
+                </a>
+                <a href="#financials" class="nav-item" data-view="financials" data-role="admin">
+                    <i>🔒</i> Financials
+                </a>
+                <a href="#expenses" class="nav-item" data-view="expenses" data-role="manager,admin">
+                    <i>💸</i> Expenses
+                </a>
+                <a href="#notes" class="nav-item" data-view="notes" data-role="salesman,manager,admin">
+                    <i>📝</i> Notes & Reminders
+                </a>
+                <a href="#settings" class="nav-item" data-view="settings" data-role="admin">
+                    <i>⚙️</i> Admin Settings
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-header">
+                <div class="header-left">
+                    <h1 id="page-title">Dashboard</h1>
+                </div>
+                <div style="display:flex;align-items:center;gap:1rem;">
+                    <div id="reminder-bell-wrap" style="position:relative;cursor:pointer;" onclick="toggleReminderDropdown()">
+                        <span style="font-size:1.5rem;">🔔</span>
+                        <span id="reminder-bell-badge" style="display:none;position:absolute;top:-4px;right:-6px;background:#ef4444;color:white;font-size:0.65rem;font-weight:800;padding:1px 5px;border-radius:10px;min-width:16px;text-align:center;"></span>
+                        <div id="reminder-dropdown" class="hidden" style="position:absolute;top:40px;right:0;width:360px;background:white;border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,0.15);border:1px solid #e2e8f0;z-index:9999;max-height:400px;overflow-y:auto;"></div>
+                    </div>
+                    <div class="user-profile" onclick="showProfileModal()" style="cursor:pointer;">
+                        <div class="user-info">
+                            <div class="user-name" id="top-user-name">Admin User</div>
+                            <div class="user-role" id="top-user-role">ADMIN</div>
+                        </div>
+                        <img src="" class="avatar" id="top-user-avatar" onerror="this.style.display='none'">
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-area" id="content-area">
+                <!-- Dynamic Content Loads Here -->
+            </div>
+        </main>
+    </div>
+
+    <div id="receipt-modal" class="modal hidden">
+        <div class="modal-content receipt-container" style="width: 380px; max-width: 100%; margin: 0 auto; background: white; padding: 20px; color: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 13px; line-height: 1.4; box-shadow: 0 10px 30px rgba(0,0,0,0.2); border-radius: 12px; border: 1px solid #eee;">
+            <div id="receipt-print-area">
+                
+                <!-- Header -->
+                <div style="text-align: center; margin-bottom: 15px; border-bottom: 2px solid #000; padding-bottom: 15px;">
+                    <img id="receipt-logo" src="logo.jpg" alt="Logo" onerror="this.style.display='none'" style="max-width: 70px; margin-bottom: 8px; filter: grayscale(1);">
+                    <div id="receipt-store-name" style="font-size: 22px; font-weight: 900; letter-spacing: 1.0px; color: #000; text-transform: uppercase; line-height: 1.1; margin-bottom: 8px;">MM BROTHERS<br>ISLAMIC MART</div>
+                    <div id="receipt-store-contact" style="font-size: 13px; font-weight: 700; color: #000; letter-spacing: 0.5px; margin-bottom: 3px;">Contact: 03025731705</div>
+                    <div id="receipt-store-address" style="font-size: 10px; font-weight: 600; color: #444; letter-spacing: 0.3px; margin-top: 2px;">Saleem Market Par Hoti, Mardan</div>
+                </div>
+                
+                <!-- Info Section -->
+                <div style="font-size: 11px; margin-bottom: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; border-bottom: 1px dashed #000; padding-bottom: 10px;">
+                    <div><span style="font-weight:700;">Date:</span> <span id="receipt-date"></span></div>
+                    <div style="text-align: right;"><span style="font-weight:700;">ID:</span> <span id="receipt-id">#000</span></div>
+                    <div><span style="font-weight:700;">Pay:</span> <span id="receipt-method">Cash</span></div>
+                    <div style="text-align: right;"><span style="font-weight:700;">Served By:</span> <span id="receipt-salesman"></span></div>
+                </div>
+
+                <!-- Customer Section -->
+                <div id="receipt-customer-section" style="background: #f8fafc; padding: 12px; border-radius: 10px; margin-bottom: 15px; font-size: 11px; border: 1px solid #e2e8f0;">
+                    <div style="display: flex; margin-bottom: 5px; align-items: baseline;">
+                        <span style="width: 65px; font-weight: 700; color: #64748b; text-transform: uppercase; font-size: 9px;">Customer</span>
+                        <span id="r-cust-name" style="font-weight: 700; color: #000; font-size: 13px;"></span>
+                    </div>
+                    <div style="display: flex; margin-bottom: 5px; align-items: baseline;">
+                        <span style="width: 65px; font-weight: 700; color: #64748b; text-transform: uppercase; font-size: 9px;">Phone</span>
+                        <span id="r-cust-phone" style="font-weight: 700; color: #334155;"></span>
+                    </div>
+                    <div style="display: flex; align-items: baseline;">
+                        <span style="width: 65px; font-weight: 700; color: #64748b; text-transform: uppercase; font-size: 9px;">Address</span>
+                        <span id="r-cust-address" style="font-weight: 700; color: #334155;"></span>
+                    </div>
+                </div>
+                
+                <!-- Items Header -->
+                <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 11px; text-transform: uppercase; border-bottom: 2px solid #000; padding: 5px 0; margin-bottom: 8px;">
+                    <span style="flex: 2.5; text-align: left;">Description</span>
+                    <span style="flex: 0.5; text-align: center;">Qty</span>
+                    <span style="flex: 1; text-align: right;">Price</span>
+                </div>
+                
+                <!-- Items List -->
+                <div id="receipt-items" style="min-height: 40px; margin-bottom: 10px;"></div>
+                
+                <div style="border-top: 2px solid #000; padding-top: 10px;">
+                    <!-- Total Section -->
+                    <div style="display: flex; justify-content: space-between; align-items: baseline; font-size: 22px; font-weight: 900; margin-top: 5px; padding: 5px 0;">
+                        <span>TOTAL</span>
+                        <span id="receipt-total-amt" style="border-bottom: 4px double #000; padding-bottom: 2px;">Rs 0</span>
+                    </div>
+                </div>
+                
+                <!-- Khata Payment Details (dynamically shown) -->
+                <div id="receipt-khata-details" style="display:none; margin-top:10px;"></div>
+
+                <!-- Footer -->
+                <div style="text-align: center; margin-top: 20px; border-top: 1px dashed #000; padding-top: 15px;">
+                    <div id="receipt-payment-stamp" style="display: none; font-size: 14px; font-weight: 900; color: #dc2626; border: 2px solid #dc2626; padding: 4px 16px; margin-bottom: 10px; display: none; letter-spacing: 1px;">UNPAID — UDHAAR</div>
+                    <div id="receipt-footer-text" style="font-size: 11px; font-weight: 600; line-height: 1.4; margin-bottom: 10px; color: #000;">
+                        Thanks for shopping with us!<br>
+                        Please check items before leaving.
+                    </div>
+                    <div style="font-size: 9px; color: #777; margin-top: 5px; border-top: 1px solid #ddd; padding-top: 8px; display: inline-block;">
+                        Developed By : <span style="font-weight: 700; color: #000; letter-spacing: 0.8px;">Nazeer Ahmad</span><br>
+                        <span style="font-size: 8.5px; letter-spacing: 0.5px;">📞 03419781283</span>
+                    </div>
+                </div>
+                
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeReceipt()">Close</button>
+                <button class="btn btn-primary" onclick="printReceipt()">Print Receipt</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Checkout Review Modal -->
+    <div id="checkout-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 550px; border-radius: 16px; padding: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="margin: 0; font-size: 1.5rem; color: #1e293b;">Final Review</h2>
+                <button class="btn btn-secondary" onclick="document.getElementById('checkout-modal').classList.add('hidden')" style="padding: 0.5rem; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">✕</button>
+            </div>
+            <div id="checkout-review-content">
+                <!-- Filled dynamically via app2.js -->
+            </div>
+            <div class="modal-actions" style="margin-top: 2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <button class="btn btn-secondary" onclick="document.getElementById('checkout-modal').classList.add('hidden')" style="padding: 1rem; font-weight: 600;">Edit Cart</button>
+                <button class="btn btn-primary" onclick="confirmCheckout()" style="padding: 1rem; font-weight: 700; background: var(--primary); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);">Confirm & Pay</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Confirmation/Alert Dialog Modal -->
+    <div id="global-dialog-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 450px; text-align: center; padding: 2.5rem;">
+            <div id="dialog-icon" style="font-size: 3.5rem; margin-bottom: 1.5rem;">⚠️</div>
+            <h2 id="dialog-title" style="margin-bottom: 1rem; color: var(--text-main); font-weight: 800;">Are you sure?</h2>
+            <p id="dialog-message" style="color: var(--text-muted); margin-bottom: 2rem; line-height: 1.6; font-size: 1.1rem;">This action cannot be undone. Please confirm if you want to proceed.</p>
+            <div class="modal-actions" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <button id="dialog-cancel-btn" class="btn btn-secondary" style="padding: 1rem; font-weight: 600;">Cancel</button>
+                <button id="dialog-confirm-btn" class="btn btn-primary" style="padding: 1rem; font-weight: 700; background: var(--primary);">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Password Modal -->
+    <div id="financial-password-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 420px; text-align: center; padding: 2.5rem; border-radius: 20px;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🔐</div>
+            <h2 id="fin-pass-title" style="margin-bottom: 0.5rem; color: #1e293b; font-weight: 800;">Enter Password</h2>
+            <p id="fin-pass-subtitle" style="color: #64748b; margin-bottom: 1.5rem; font-size: 0.95rem;">Financial data is protected. Enter your password to continue.</p>
+            <form id="fin-pass-form">
+                <div id="fin-pass-fields">
+                    <input type="password" id="fin-pass-input" class="form-control" placeholder="Enter password" required style="width: 100%; padding: 1rem; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 1rem; margin-bottom: 1rem; text-align: center; letter-spacing: 3px; font-weight: 700;">
+                </div>
+                <div id="fin-pass-error" style="color: #ef4444; font-size: 0.85rem; margin-bottom: 1rem; display: none;"></div>
+                <div class="modal-actions" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <button type="button" class="btn btn-secondary" onclick="closeFinancialPasswordModal()" style="padding: 1rem; font-weight: 600; border-radius: 12px;">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="fin-pass-submit-btn" style="padding: 1rem; font-weight: 700; border-radius: 12px;">Unlock</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="js/app2.js?v=46"></script>
+    <script src="js/features-core.js?v=4"></script>
+    <script src="js/features-whatsapp.js?v=2"></script>
+    <script src="js/features-khata.js?v=28"></script>
+    <script src="js/features-notes.js?v=2"></script>
+    <script src="js/features-financial.js?v=4"></script>
+    <script src="js/features-export.js?v=1"></script>
+</body>
+</html>

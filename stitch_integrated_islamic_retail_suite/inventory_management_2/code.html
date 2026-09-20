@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>The Sensory Curator - Inventory Management</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;400;700;800&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "primary-container": "#266164",
+                "on-error": "#ffffff",
+                "on-primary-container": "#a0dadd",
+                "on-tertiary": "#ffffff",
+                "background": "#fdf9f3",
+                "tertiary-fixed": "#d7e5e5",
+                "secondary-fixed": "#ffdea5",
+                "surface-container-low": "#f7f3ed",
+                "secondary-container": "#fed488",
+                "error": "#ba1a1a",
+                "inverse-primary": "#97d0d4",
+                "primary-fixed-dim": "#97d0d4",
+                "on-background": "#1c1c18",
+                "on-primary-fixed-variant": "#0d4f52",
+                "primary-fixed": "#b3edf0",
+                "on-tertiary-container": "#c3d2d2",
+                "on-surface-variant": "#404849",
+                "surface-container-highest": "#e6e2dd",
+                "on-error-container": "#93000a",
+                "tertiary-fixed-dim": "#bbc9c9",
+                "tertiary": "#364444",
+                "inverse-on-surface": "#f4f0eb",
+                "on-secondary": "#ffffff",
+                "error-container": "#ffdad6",
+                "inverse-surface": "#31302d",
+                "on-primary": "#ffffff",
+                "surface-tint": "#2d676a",
+                "on-tertiary-fixed-variant": "#3c4949",
+                "primary": "#02494c",
+                "on-secondary-fixed": "#261900",
+                "on-primary-fixed": "#002021",
+                "on-secondary-container": "#785a1a",
+                "on-secondary-fixed-variant": "#5d4201",
+                "surface-container-high": "#ece7e2",
+                "surface-dim": "#ddd9d4",
+                "surface-container-lowest": "#ffffff",
+                "surface-variant": "#e6e2dd",
+                "secondary": "#775a19",
+                "surface-container": "#f2ede8",
+                "on-surface": "#1c1c18",
+                "outline-variant": "#bfc8c8",
+                "surface": "#fdf9f3",
+                "outline": "#707979",
+                "surface-bright": "#fdf9f3",
+                "tertiary-container": "#4d5b5b",
+                "secondary-fixed-dim": "#e9c176",
+                "on-tertiary-fixed": "#111e1e"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+            },
+            "fontFamily": {
+                "headline": ["Manrope"],
+                "body": ["Inter"],
+                "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, .brand-logo { font-family: 'Manrope', sans-serif; }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex">
+<!-- SideNavBar Shell -->
+<aside class="h-screen w-64 fixed left-0 top-0 flex flex-col bg-[#f8f5f0] dark:bg-[#013032] transition-colors z-50">
+<div class="flex flex-col h-full py-8 gap-y-2">
+<!-- Brand Header -->
+<div class="px-8 mb-8">
+<div class="flex flex-col items-start gap-3">
+<img alt="MM Brothers Logo" class="w-16 h-16 rounded-xl object-cover shadow-sm" src="https://lh3.googleusercontent.com/aida/ADBb0ugZy51NBJdtfi1o1HC3_yOxo0zFj-lG4OaKS-YYdTlbRi2TJw6yKsK3KZr5Y4SmO2ndq4WUOowQkS12YCa31iURmjY3k3MiWlbDPoe_xJMjTo9LyXNRMxjrg_8bcrpLmR-YmSFqbAdp-m3pjpLmy-F5vd69hZvTLaX_SDTJk5cOaS7IfDG5N5EnZadFBLgeRlDwAPAX3G5t1BbCQx0o64jSZiV_4-C7klm55t0NEIPc9QVJiZHEFWh2ARjporOVwEjbypHX6v5bCQ"/>
+<div>
+<h2 class="font-['Manrope'] font-bold text-[#775a19] text-lg leading-tight">MM Brothers<br/>Islamic Mart</h2>
+<p class="font-['Inter'] text-[10px] tracking-widest uppercase opacity-60 mt-1">Management Suite</p>
+</div>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="flex-1">
+<a class="flex items-center gap-4 text-[#02494c]/70 hover:translate-x-1 py-3 px-6 hover:bg-[#02494c]/10 transition-all duration-300 font-['Inter'] text-sm tracking-wide uppercase" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                    Atelier Overview
+                </a>
+<a class="flex items-center gap-4 bg-[#02494c] text-white rounded-r-full py-3 px-6 shadow-lg font-['Inter'] text-sm tracking-wide uppercase" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+                    Curated Inventory
+                </a>
+<a class="flex items-center gap-4 text-[#02494c]/70 hover:translate-x-1 py-3 px-6 hover:bg-[#02494c]/10 transition-all duration-300 font-['Inter'] text-sm tracking-wide uppercase" href="#">
+<span class="material-symbols-outlined">payments</span>
+                    Point of Sale
+                </a>
+<a class="flex items-center gap-4 text-[#02494c]/70 hover:translate-x-1 py-3 px-6 hover:bg-[#02494c]/10 transition-all duration-300 font-['Inter'] text-sm tracking-wide uppercase" href="#">
+<span class="material-symbols-outlined">analytics</span>
+                    Editorial Reports
+                </a>
+<a class="flex items-center gap-4 text-[#02494c]/70 hover:translate-x-1 py-3 px-6 hover:bg-[#02494c]/10 transition-all duration-300 font-['Inter'] text-sm tracking-wide uppercase" href="#">
+<span class="material-symbols-outlined">group</span>
+                    Staff Settings
+                </a>
+</nav>
+<!-- CTA -->
+<div class="px-6 mb-4">
+<button class="w-full bg-[#02494c] text-white py-4 rounded-xl flex items-center justify-center gap-2 font-bold transition-transform active:scale-95 shadow-lg">
+<span class="material-symbols-outlined">add</span>
+                    New Transaction
+                </button>
+</div>
+<!-- Footer Tabs -->
+<div class="pt-4 border-t border-[#02494c]/5">
+<a class="flex items-center gap-4 text-[#02494c]/70 hover:translate-x-1 py-3 px-6 hover:bg-[#02494c]/10 transition-all font-['Inter'] text-sm tracking-wide uppercase" href="#">
+<span class="material-symbols-outlined">help_center</span>
+                    Help
+                </a>
+<a class="flex items-center gap-4 text-[#02494c]/70 hover:translate-x-1 py-3 px-6 hover:bg-[#02494c]/10 transition-all font-['Inter'] text-sm tracking-wide uppercase" href="#">
+<span class="material-symbols-outlined">logout</span>
+                    Logout
+                </a>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-64 flex-1 flex flex-col">
+<!-- TopAppBar Shell -->
+<header class="docked full-width top-0 sticky z-40 bg-[#fdf9f3]/80 backdrop-blur-md shadow-sm shadow-[#1c1c18]/5">
+<div class="flex justify-between items-center w-full px-8 py-4">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3">
+<img alt="MM Brothers Logo" class="w-10 h-10 rounded-lg object-cover" src="https://lh3.googleusercontent.com/aida/ADBb0ugZy51NBJdtfi1o1HC3_yOxo0zFj-lG4OaKS-YYdTlbRi2TJw6yKsK3KZr5Y4SmO2ndq4WUOowQkS12YCa31iURmjY3k3MiWlbDPoe_xJMjTo9LyXNRMxjrg_8bcrpLmR-YmSFqbAdp-m3pjpLmy-F5vd69hZvTLaX_SDTJk5cOaS7IfDG5N5EnZadFBLgeRlDwAPAX3G5t1BbCQx0o64jSZiV_4-C7klm55t0NEIPc9QVJiZHEFWh2ARjporOVwEjbypHX6v5bCQ"/>
+<h1 class="text-xl font-black tracking-tighter text-[#02494c] uppercase">MM Brothers Islamic Mart</h1>
+</div>
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#02494c]/40">search</span>
+<input class="bg-[#02494c]/5 border-none rounded-full py-2 pl-10 pr-6 w-80 focus:ring-2 focus:ring-[#02494c]/20 transition-all" placeholder="Search inventory..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-[#02494c] hover:bg-[#02494c]/5 rounded-full transition-all">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-[#02494c] hover:bg-[#02494c]/5 rounded-full transition-all">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="p-2 text-[#02494c] hover:bg-[#02494c]/5 rounded-full transition-all">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<div class="w-10 h-10 rounded-full overflow-hidden ml-4 border-2 border-primary/10">
+<img alt="Admin profile" class="w-full h-full object-cover" data-alt="close-up portrait of a professional male store manager with a welcoming and sophisticated expression" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDk-991wSRL_6ofv-OfnOoKyF5nKnQbNZGqIudrA3vDE1BTmPocFzVHO2fP7CH9fWbX1SUPb9B6OBSB2M-RHG5eWDvCb1KJXbSUY-q2qsTx-Dnph3extcTp_naWCnDffOqY3Le67JMWFpcCD6Ck72xQDJz5GmDTemkKyWVWBMYo6DDPPo8jqsp0AOQGhmrwd88Gy_H81cvMgL7wdx7Ov8SHyeqRNb05RGEFe0M2-yEz5CD1gL2cZqsXsJ1a4BZqLSTqpXDRgKHNlg4"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Page Content -->
+<section class="p-12">
+<!-- Editorial Header Section -->
+<div class="flex justify-between items-end mb-12">
+<div class="max-w-2xl">
+<span class="text-secondary font-semibold tracking-widest text-xs uppercase mb-2 block">Stock Archives</span>
+<h2 class="text-5xl font-extrabold text-primary tracking-tighter leading-tight">Curated Inventory</h2>
+<p class="text-on-surface/60 mt-4 text-lg">Manage the sensory collection of rare attars, artisanal honeys, and handcrafted artifacts.</p>
+</div>
+<button class="bg-primary text-white px-8 py-4 rounded-xl flex items-center gap-3 font-bold shadow-lg hover:translate-y-[-2px] transition-all active:scale-95">
+<span class="material-symbols-outlined">add_circle</span>
+                    Add New Product
+                </button>
+</div>
+<!-- Filter Bento Bar -->
+<div class="flex gap-4 mb-10 overflow-x-auto pb-4">
+<button class="bg-primary text-white px-6 py-2 rounded-full text-sm font-medium transition-all shadow-md">All Collections</button>
+<button class="bg-surface-container-high text-on-surface/70 hover:bg-primary/10 px-6 py-2 rounded-full text-sm font-medium transition-all">Perfume</button>
+<button class="bg-surface-container-high text-on-surface/70 hover:bg-primary/10 px-6 py-2 rounded-full text-sm font-medium transition-all">Cap</button>
+<button class="bg-surface-container-high text-on-surface/70 hover:bg-primary/10 px-6 py-2 rounded-full text-sm font-medium transition-all">Honey</button>
+<button class="bg-surface-container-high text-on-surface/70 hover:bg-primary/10 px-6 py-2 rounded-full text-sm font-medium transition-all">Prayer Beads</button>
+<button class="bg-surface-container-high text-on-surface/70 hover:bg-primary/10 px-6 py-2 rounded-full text-sm font-medium transition-all">Oud Wood</button>
+</div>
+<!-- Inventory Tonal List -->
+<div class="bg-surface-container-low rounded-[2rem] overflow-hidden">
+<div class="grid grid-cols-12 gap-4 px-8 py-6 text-on-surface/40 text-[10px] uppercase tracking-widest font-bold border-b border-on-surface/5">
+<div class="col-span-1">Item</div>
+<div class="col-span-4">Product Details</div>
+<div class="col-span-2 text-center">Stock Level</div>
+<div class="col-span-1 text-right">Cost</div>
+<div class="col-span-1 text-right">Sale</div>
+<div class="col-span-2 text-center">Profit Margin</div>
+<div class="col-span-1 text-right">Action</div>
+</div>
+<!-- Product Rows -->
+<div class="flex flex-col">
+<!-- Row 1 -->
+<div class="grid grid-cols-12 gap-4 px-8 py-8 items-center hover:bg-surface-container-highest/40 transition-all border-b border-on-surface/5">
+<div class="col-span-1">
+<div class="w-16 h-16 bg-white rounded-2xl overflow-hidden shadow-sm">
+<img alt="Oud Al-Fayeed" class="w-full h-full object-cover" data-alt="luxury perfume bottle with gold cap and dark amber liquid on a marble surface with soft side lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDG0G1pL4_jXYSQF9ssPBBJIB18kT1PyJyJqqiVKO7XJ0kcZP9TxgJFJmFf4Pveia2sr6mGp69g8AV1_YAI7ry185JmjxPivUxCS-TKAfkVK616v8NHvkh6RjrqxjvSF8ZfbOt4fO1ETFmSBOybn54odtz5TBCKP-D97QmM3nSB9I6buwzMW_9ioJdw-CWR-Xt1ecvZ_MJtGr9JhUTKnidOwlTfvBOO3Q3qU5ihvv_1lkNAfSexOa_NssChenjuesjvh-62sFPsoX4"/>
+</div>
+</div>
+<div class="col-span-4">
+<h4 class="font-headline font-bold text-lg text-primary">Oud Al-Fayeed</h4>
+<span class="inline-block bg-tertiary-fixed text-on-tertiary-fixed-variant px-3 py-1 rounded-full text-[10px] uppercase font-bold mt-1">Perfume</span>
+</div>
+<div class="col-span-2 text-center">
+<div class="flex flex-col items-center">
+<span class="text-xl font-headline font-bold text-primary">24</span>
+<div class="w-16 h-1 bg-on-surface/10 rounded-full mt-2 overflow-hidden">
+<div class="h-full bg-primary w-3/4"></div>
+</div>
+</div>
+</div>
+<div class="col-span-1 text-right font-medium">$145.00</div>
+<div class="col-span-1 text-right font-medium">$290.00</div>
+<div class="col-span-2 text-center">
+<span class="bg-secondary-fixed text-on-secondary-fixed-variant px-4 py-1.5 rounded-full text-xs font-bold">50.0%</span>
+</div>
+<div class="col-span-1 text-right">
+<button class="text-primary/40 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Row 2 -->
+<div class="grid grid-cols-12 gap-4 px-8 py-8 items-center hover:bg-surface-container-highest/40 transition-all border-b border-on-surface/5">
+<div class="col-span-1">
+<div class="w-16 h-16 bg-white rounded-2xl overflow-hidden shadow-sm">
+<img alt="Sidr Honey" class="w-full h-full object-cover" data-alt="artisanal glass jar of thick golden honey with a wooden dipper on a rustic table in warm sunlight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7QMQcNxc5RHSWQkuyMUqua30WcCOcEOcorHya1gJfEvS8tX2e2cIsT7suDYGP0IQizxbub_tPDLFG2GQnUfqd0SjclDXR11udIDEg9_opKNpXkWBK9NmNceU4hzTKlnVDOPkF4ihn9TayMO1SD3Vvg_YRYmVu2eaw0XVF6-1Dvx4RqQqGHUzRkE6X9GYPN4AGx2reOZmhjDNhWlAGVGn_iKkHEyTU6-ogceJTlexJcmvAeVYQIsdKH8q2g5BkLyDVqFCymDuzY68"/>
+</div>
+</div>
+<div class="col-span-4">
+<h4 class="font-headline font-bold text-lg text-primary">Yemeni Sidr Honey</h4>
+<span class="inline-block bg-secondary-fixed text-on-secondary-fixed-variant px-3 py-1 rounded-full text-[10px] uppercase font-bold mt-1">Honey</span>
+</div>
+<div class="col-span-2 text-center">
+<div class="flex flex-col items-center">
+<span class="text-xl font-headline font-bold text-error">4</span>
+<div class="w-16 h-1 bg-on-surface/10 rounded-full mt-2 overflow-hidden">
+<div class="h-full bg-error w-1/5"></div>
+</div>
+<span class="text-[9px] text-error uppercase font-bold mt-1">Low Stock</span>
+</div>
+</div>
+<div class="col-span-1 text-right font-medium">$85.00</div>
+<div class="col-span-1 text-right font-medium">$155.00</div>
+<div class="col-span-2 text-center">
+<span class="bg-secondary-fixed text-on-secondary-fixed-variant px-4 py-1.5 rounded-full text-xs font-bold">45.1%</span>
+</div>
+<div class="col-span-1 text-right">
+<button class="text-primary/40 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Row 3 -->
+<div class="grid grid-cols-12 gap-4 px-8 py-8 items-center hover:bg-surface-container-highest/40 transition-all border-b border-on-surface/5">
+<div class="col-span-1">
+<div class="w-16 h-16 bg-white rounded-2xl overflow-hidden shadow-sm">
+<img alt="Silk Kufi Cap" class="w-full h-full object-cover" data-alt="close up of a finely embroidered ivory silk kufi cap with intricate patterns on a dark wood stand" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBOFTnNv9zX5QujqneThI7UpKhHwHblmIbGpSAAYOFFaygEBa2mOqwnXc_kywYLXk307WWPCQ8By03KRwbnfU9gJnaomWojp6x87MLbXCdy1KVh8rhp6XxfZG4M6P7foHTwkaD59CIiANt_JCZYfhWrLI3KMK1VH6sdt_MM-Kcc6qMNndcDUBrTM5XaLEclg1SjVA9tGbGrV5b2sdl9yFpllScxbEMrQ_U6dIYcj4rmEN32jL6soQTHCeTo3_qC3gEG_aoG9eLrA-E"/>
+</div>
+</div>
+<div class="col-span-4">
+<h4 class="font-headline font-bold text-lg text-primary">Embroidered Silk Kufi</h4>
+<span class="inline-block bg-tertiary-fixed text-on-tertiary-fixed-variant px-3 py-1 rounded-full text-[10px] uppercase font-bold mt-1">Cap</span>
+</div>
+<div class="col-span-2 text-center">
+<div class="flex flex-col items-center">
+<span class="text-xl font-headline font-bold text-primary">56</span>
+<div class="w-16 h-1 bg-on-surface/10 rounded-full mt-2 overflow-hidden">
+<div class="h-full bg-primary w-full"></div>
+</div>
+</div>
+</div>
+<div class="col-span-1 text-right font-medium">$12.00</div>
+<div class="col-span-1 text-right font-medium">$45.00</div>
+<div class="col-span-2 text-center">
+<span class="bg-secondary-fixed text-on-secondary-fixed-variant px-4 py-1.5 rounded-full text-xs font-bold">73.3%</span>
+</div>
+<div class="col-span-1 text-right">
+<button class="text-primary/40 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Row 4 -->
+<div class="grid grid-cols-12 gap-4 px-8 py-8 items-center hover:bg-surface-container-highest/40 transition-all">
+<div class="col-span-1">
+<div class="w-16 h-16 bg-white rounded-2xl overflow-hidden shadow-sm">
+<img alt="Royal Amber" class="w-full h-full object-cover" data-alt="crystal glass flacon of royal amber attar resting on a bed of dried flower petals with soft golden lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDKXorEEb6O0O9EsX2fHmjVq9GHhphWdb0ZGt0hHc3E0Rnkmc0gz-abZQnvdo9rzn3JlaGoo8n2J2WBVWi95umJh4TdY6u82AvRqekMznerG9UEGJHkdl1PCwyR6Q0tRRWjCssUvf7moFm4bUMfJ-2MBJlCV-pj58ymjtnjYj3ykXuNYY09s8qlaNpyqiK5QV3cmV6X7S3c5BhP_YQNV-YFY3XhMCaDpL9REh0G5-XVbdKkGH04GOBGHB9HszebO6-oKbtlLE6G6-c"/>
+</div>
+</div>
+<div class="col-span-4">
+<h4 class="font-headline font-bold text-lg text-primary">Royal Amber Attar</h4>
+<span class="inline-block bg-tertiary-fixed text-on-tertiary-fixed-variant px-3 py-1 rounded-full text-[10px] uppercase font-bold mt-1">Perfume</span>
+</div>
+<div class="col-span-2 text-center">
+<div class="flex flex-col items-center">
+<span class="text-xl font-headline font-bold text-primary">12</span>
+<div class="w-16 h-1 bg-on-surface/10 rounded-full mt-2 overflow-hidden">
+<div class="h-full bg-primary w-2/5"></div>
+</div>
+</div>
+</div>
+<div class="col-span-1 text-right font-medium">$220.00</div>
+<div class="col-span-1 text-right font-medium">$450.00</div>
+<div class="col-span-2 text-center">
+<span class="bg-secondary-fixed text-on-secondary-fixed-variant px-4 py-1.5 rounded-full text-xs font-bold">51.1%</span>
+</div>
+<div class="col-span-1 text-right">
+<button class="text-primary/40 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Footer Pagination -->
+<div class="bg-surface-container-high/30 px-8 py-6 flex justify-between items-center">
+<span class="text-on-surface/50 text-xs font-medium">Showing 4 of 124 curated items</span>
+<div class="flex gap-2">
+<button class="p-2 hover:bg-primary/5 rounded-lg text-primary">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="px-3 py-1 bg-primary text-white rounded-lg text-xs font-bold">1</button>
+<button class="px-3 py-1 hover:bg-primary/5 text-on-surface/70 rounded-lg text-xs font-medium">2</button>
+<button class="px-3 py-1 hover:bg-primary/5 text-on-surface/70 rounded-lg text-xs font-medium">3</button>
+<button class="p-2 hover:bg-primary/5 rounded-lg text-primary">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Dashboard Bottom Metrics (Editorial Cards) -->
+<div class="grid grid-cols-3 gap-8 mt-12">
+<div class="bg-surface-container-low p-8 rounded-[2rem] flex flex-col justify-between h-48">
+<span class="text-on-surface/40 text-[10px] font-bold uppercase tracking-widest">Total Inventory Value</span>
+<div>
+<span class="text-4xl font-black text-primary">$42,890.00</span>
+<p class="text-secondary text-xs font-bold mt-1">+12% from last month</p>
+</div>
+</div>
+<div class="bg-surface-container-low p-8 rounded-[2rem] flex flex-col justify-between h-48">
+<span class="text-on-surface/40 text-[10px] font-bold uppercase tracking-widest">Avg. Profit Margin</span>
+<div>
+<span class="text-4xl font-black text-primary">54.2%</span>
+<p class="text-on-surface/40 text-xs mt-1">Across all 5 categories</p>
+</div>
+</div>
+<div class="bg-primary p-8 rounded-[2rem] flex flex-col justify-between h-48 shadow-xl">
+<span class="text-white/40 text-[10px] font-bold uppercase tracking-widest">Out of Stock Warnings</span>
+<div class="flex items-end justify-between">
+<span class="text-6xl font-black text-white">03</span>
+<button class="text-white/80 border border-white/20 px-4 py-2 rounded-full text-[10px] uppercase font-bold hover:bg-white/10 transition-all">View Alerts</button>
+</div>
+</div>
+</div>
+</section>
+</main>
+</body></html>

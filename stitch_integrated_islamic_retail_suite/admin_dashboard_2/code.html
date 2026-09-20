@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MM Brothers Islamic Mart | Admin Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;400;600;700;800&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-container": "#266164",
+                    "on-error": "#ffffff",
+                    "on-primary-container": "#a0dadd",
+                    "on-tertiary": "#ffffff",
+                    "background": "#fdf9f3",
+                    "tertiary-fixed": "#d7e5e5",
+                    "secondary-fixed": "#ffdea5",
+                    "surface-container-low": "#f7f3ed",
+                    "secondary-container": "#fed488",
+                    "error": "#ba1a1a",
+                    "inverse-primary": "#97d0d4",
+                    "primary-fixed-dim": "#97d0d4",
+                    "on-background": "#1c1c18",
+                    "on-primary-fixed-variant": "#0d4f52",
+                    "primary-fixed": "#b3edf0",
+                    "on-tertiary-container": "#c3d2d2",
+                    "on-surface-variant": "#404849",
+                    "surface-container-highest": "#e6e2dd",
+                    "on-error-container": "#93000a",
+                    "tertiary-fixed-dim": "#bbc9c9",
+                    "tertiary": "#364444",
+                    "inverse-on-surface": "#f4f0eb",
+                    "on-secondary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "inverse-surface": "#31302d",
+                    "on-primary": "#ffffff",
+                    "surface-tint": "#2d676a",
+                    "on-tertiary-fixed-variant": "#3c4949",
+                    "primary": "#02494c",
+                    "on-secondary-fixed": "#261900",
+                    "on-primary-fixed": "#002021",
+                    "on-secondary-container": "#785a1a",
+                    "on-secondary-fixed-variant": "#5d4201",
+                    "surface-container-high": "#ece7e2",
+                    "surface-dim": "#ddd9d4",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-variant": "#e6e2dd",
+                    "secondary": "#775a19",
+                    "surface-container": "#f2ede8",
+                    "on-surface": "#1c1c18",
+                    "outline-variant": "#bfc8c8",
+                    "surface": "#fdf9f3",
+                    "outline": "#707979",
+                    "surface-bright": "#fdf9f3",
+                    "tertiary-container": "#4d5b5b",
+                    "secondary-fixed-dim": "#e9c176",
+                    "on-tertiary-fixed": "#111e1e"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; background-color: #fdf9f3; color: #1c1c18; }
+        h1, h2, h3, .brand-font { font-family: 'Manrope', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface selection:bg-secondary-fixed">
+<!-- TopAppBar -->
+<header class="bg-[#fdf9f3]/80 dark:bg-[#02494c]/80 backdrop-blur-md docked full-width top-0 sticky z-50 no-border shadow-sm shadow-[#1c1c18]/5">
+<div class="flex justify-between items-center w-full px-8 py-4">
+<div class="flex items-center gap-8">
+<span class="text-2xl font-black tracking-tighter text-[#02494c] dark:text-white uppercase"><div class="flex items-center gap-3"><img alt="MM Logo" class="h-10 w-10 object-contain rounded-lg" src="https://lh3.googleusercontent.com/aida/ADBb0ugZy51NBJdtfi1o1HC3_yOxo0zFj-lG4OaKS-YYdTlbRi2TJw6yKsK3KZr5Y4SmO2ndq4WUOowQkS12YCa31iURmjY3k3MiWlbDPoe_xJMjTo9LyXNRMxjrg_8bcrpLmR-YmSFqbAdp-m3pjpLmy-F5vd69hZvTLaX_SDTJk5cOaS7IfDG5N5EnZadFBLgeRlDwAPAX3G5t1BbCQx0o64jSZiV_4-C7klm55t0NEIPc9QVJiZHEFWh2ARjporOVwEjbypHX6v5bCQ"/><span class="text-2xl font-black tracking-tighter text-[#02494c] dark:text-white uppercase">MM Brothers Islamic Mart</span></div></span>
+<div class="hidden md:flex items-center gap-6 ml-4">
+<span class="text-[#02494c] dark:text-[#fdf9f3] font-bold cursor-pointer font-['Manrope'] tracking-tight">Atelier Overview</span>
+<span class="text-[#1c1c18]/60 dark:text-[#fdf9f3]/60 hover:bg-[#02494c]/5 dark:hover:bg-white/10 transition-all px-3 py-1 rounded cursor-pointer font-['Manrope'] tracking-tight">Inventory</span>
+<span class="text-[#1c1c18]/60 dark:text-[#fdf9f3]/60 hover:bg-[#02494c]/5 dark:hover:bg-white/10 transition-all px-3 py-1 rounded cursor-pointer font-['Manrope'] tracking-tight">Sales Reports</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex gap-2">
+<button class="p-2 hover:bg-[#02494c]/5 dark:hover:bg-white/10 transition-all rounded-full scale-95 active:opacity-80 transition-transform">
+<span class="material-symbols-outlined text-[#02494c] dark:text-[#fdf9f3]">notifications</span>
+</button>
+<button class="p-2 hover:bg-[#02494c]/5 dark:hover:bg-white/10 transition-all rounded-full scale-95 active:opacity-80 transition-transform">
+<span class="material-symbols-outlined text-[#02494c] dark:text-[#fdf9f3]">settings</span>
+</button>
+</div>
+<img alt="Admin profile" class="w-10 h-10 rounded-full object-cover shadow-sm ring-2 ring-primary/10" data-alt="Close-up portrait of a professional male store manager in a clean, minimalist setting with soft side lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVS8LsRgOixBO_POnsb1raxiqm3AN9WnWGrlKra-1KxLyhTURgppwWQ6oKMDcCr6zGdp7iH5-c_sqkMG_f8h8pEb2Oc-_zOEmS4a9bDEvokXWUgSzeFZiDFEoD0bZcX5GKdqIVszlXzL8HY0551RLkToCAnrVwYJZffFAoo3SIDxynz693YwdGw5EA5vckUKYR6IAY5Q-5Z5l_BBGilIKcAomEw9ngGBqtBI1nXBYbN1dcQfI97rL3VJ_1uhrZCwF38hxuBLOF4NE"/>
+</div>
+</div>
+</header>
+<div class="flex min-h-[calc(100vh-72px)]">
+<!-- SideNavBar -->
+<aside class="bg-[#f8f5f0] dark:bg-[#013032] h-screen w-64 fixed left-0 top-0 flex flex-col bg-[#f2ede4] dark:bg-[#012628] transition-colors flat no-border tonal-depth z-40 hidden md:flex">
+<div class="flex flex-col h-full py-8 gap-y-2 pt-24">
+<div class="px-8 mb-8 flex flex-col items-center text-center gap-3"><img alt="MM Logo" class="w-16 h-16 object-contain rounded-xl shadow-md mb-2" src="https://lh3.googleusercontent.com/aida/ADBb0ugZy51NBJdtfi1o1HC3_yOxo0zFj-lG4OaKS-YYdTlbRi2TJw6yKsK3KZr5Y4SmO2ndq4WUOowQkS12YCa31iURmjY3k3MiWlbDPoe_xJMjTo9LyXNRMxjrg_8bcrpLmR-YmSFqbAdp-m3pjpLmy-F5vd69hZvTLaX_SDTJk5cOaS7IfDG5N5EnZadFBLgeRlDwAPAX3G5t1BbCQx0o64jSZiV_4-C7klm55t0NEIPc9QVJiZHEFWh2ARjporOVwEjbypHX6v5bCQ"/><div><h2 class="font-['Manrope'] font-bold text-[#775a19] text-xl leading-tight">MM Brothers</h2><p class="font-['Inter'] text-xs tracking-widest uppercase opacity-70">Islamic Mart</p></div></div>
+<nav class="flex-1 px-4 space-y-1">
+<a class="flex items-center gap-4 bg-[#02494c] text-white dark:bg-[#775a19] dark:text-[#fdf9f3] rounded-r-full py-3 px-6 shadow-lg ease-in-out transform" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-['Inter'] text-sm tracking-wide uppercase">Atelier Overview</span>
+</a>
+<a class="flex items-center gap-4 text-[#02494c]/70 dark:text-[#fdf9f3]/70 hover:translate-x-1 py-3 px-6 hover:bg-[#02494c]/10 dark:hover:bg-[#775a19]/20 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-['Inter'] text-sm tracking-wide uppercase">Curated Inventory</span>
+</a>
+<a class="flex items-center gap-4 text-[#02494c]/70 dark:text-[#fdf9f3]/70 hover:translate-x-1 py-3 px-6 hover:bg-[#02494c]/10 dark:hover:bg-[#775a19]/20 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-['Inter'] text-sm tracking-wide uppercase">Point of Sale</span>
+</a>
+<a class="flex items-center gap-4 text-[#02494c]/70 dark:text-[#fdf9f3]/70 hover:translate-x-1 py-3 px-6 hover:bg-[#02494c]/10 dark:hover:bg-[#775a19]/20 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-['Inter'] text-sm tracking-wide uppercase">Editorial Reports</span>
+</a>
+<a class="flex items-center gap-4 text-[#02494c]/70 dark:text-[#fdf9f3]/70 hover:translate-x-1 py-3 px-6 hover:bg-[#02494c]/10 dark:hover:bg-[#775a19]/20 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-['Inter'] text-sm tracking-wide uppercase">Staff Settings</span>
+</a>
+</nav>
+<div class="px-6 py-4">
+<button class="w-full py-4 px-6 bg-primary text-on-primary rounded-xl font-bold font-headline shadow-lg hover:shadow-primary/20 transition-all">
+                        New Transaction
+                    </button>
+</div>
+<div class="mt-auto px-4 border-t border-on-surface/5 pt-4">
+<a class="flex items-center gap-4 text-[#02494c]/70 dark:text-[#fdf9f3]/70 py-3 px-6 hover:bg-[#02494c]/10 transition-all" href="#">
+<span class="material-symbols-outlined">help_center</span>
+<span class="font-['Inter'] text-sm tracking-wide uppercase">Help</span>
+</a>
+<a class="flex items-center gap-4 text-[#02494c]/70 dark:text-[#fdf9f3]/70 py-3 px-6 hover:bg-[#02494c]/10 transition-all" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-['Inter'] text-sm tracking-wide uppercase">Logout</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 md:ml-64 p-8 bg-surface transition-all">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-4">
+<div>
+<h1 class="text-4xl font-extrabold tracking-tight text-primary mb-2">Morning, Curator</h1>
+<p class="text-on-surface-variant font-body">Performance overview for Islamic Heritage Atelier</p>
+</div>
+<div class="flex gap-3">
+<button class="bg-surface-container-high px-5 py-2 rounded-xl text-primary font-semibold text-sm hover:bg-surface-container-highest transition-colors">
+                        Download Report
+                    </button>
+<button class="bg-primary px-5 py-2 rounded-xl text-on-primary font-semibold text-sm shadow-xl shadow-primary/10">
+                        Market Analysis
+                    </button>
+</div>
+</div>
+<!-- Key Metrics Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+<!-- Total Sales -->
+<div class="bg-surface-container-low p-6 rounded-xl relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl">payments</span>
+</div>
+<p class="text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">Total Sales</p>
+<h3 class="text-3xl font-extrabold text-primary">$24,500</h3>
+<div class="mt-4 flex items-center gap-1 text-primary text-xs font-semibold">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+<span>12.5% vs last month</span>
+</div>
+</div>
+<!-- Daily Sales -->
+<div class="bg-surface-container-low p-6 rounded-xl relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl">today</span>
+</div>
+<p class="text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">Daily Sales</p>
+<h3 class="text-3xl font-extrabold text-primary">$1,200</h3>
+<div class="mt-4 flex items-center gap-1 text-primary text-xs font-semibold">
+<span class="material-symbols-outlined text-sm">check_circle</span>
+<span>Daily goal met</span>
+</div>
+</div>
+<!-- Profit Margin -->
+<div class="bg-surface-container-low p-6 rounded-xl relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl">percent</span>
+</div>
+<p class="text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">Profit Margin</p>
+<h3 class="text-3xl font-extrabold text-secondary">28%</h3>
+<div class="mt-4 flex items-center gap-1 text-secondary text-xs font-semibold">
+<span class="material-symbols-outlined text-sm">auto_awesome</span>
+<span>Optimized Pricing</span>
+</div>
+</div>
+<!-- Stock Summary -->
+<div class="bg-primary text-on-primary p-6 rounded-xl relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl" style="font-variation-settings: 'FILL' 1;">inventory</span>
+</div>
+<p class="text-xs font-label uppercase tracking-widest opacity-70 mb-1">Stock Summary</p>
+<h3 class="text-3xl font-extrabold">450 Items</h3>
+<div class="mt-4 flex items-center gap-1 text-secondary-fixed text-xs font-bold">
+<span class="material-symbols-outlined text-sm">warning</span>
+<span>12 Low Stock Alerts</span>
+</div>
+</div>
+</div>
+<!-- Middle Section: Analytics & Low Stock -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Weekly Sales Performance Chart Placeholder -->
+<div class="lg:col-span-2 bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-outline-variant/10">
+<div class="flex justify-between items-center mb-10">
+<h2 class="text-xl font-bold text-primary">Weekly Sales Performance</h2>
+<div class="flex gap-2">
+<span class="inline-block w-3 h-3 rounded-full bg-primary"></span>
+<span class="text-xs font-label text-on-surface-variant">Attars &amp; Perfumes</span>
+</div>
+</div>
+<!-- Visual Chart Representation (SVG/CSS) -->
+<div class="h-64 w-full flex items-end justify-between gap-4 px-2">
+<div class="flex flex-col items-center flex-1 group">
+<div class="w-full bg-primary/10 rounded-t-lg group-hover:bg-primary/20 transition-colors h-[40%]"></div>
+<span class="mt-4 text-[10px] uppercase tracking-tighter text-on-surface-variant font-label">Mon</span>
+</div>
+<div class="flex flex-col items-center flex-1 group">
+<div class="w-full bg-primary/10 rounded-t-lg group-hover:bg-primary/20 transition-colors h-[65%]"></div>
+<span class="mt-4 text-[10px] uppercase tracking-tighter text-on-surface-variant font-label">Tue</span>
+</div>
+<div class="flex flex-col items-center flex-1 group">
+<div class="w-full bg-primary/10 rounded-t-lg group-hover:bg-primary/20 transition-colors h-[55%]"></div>
+<span class="mt-4 text-[10px] uppercase tracking-tighter text-on-surface-variant font-label">Wed</span>
+</div>
+<div class="flex flex-col items-center flex-1 group">
+<div class="w-full bg-primary/40 rounded-t-lg group-hover:bg-primary transition-colors h-[85%] border-x-4 border-surface"></div>
+<span class="mt-4 text-[10px] uppercase tracking-tighter text-primary font-bold font-label">Thu</span>
+</div>
+<div class="flex flex-col items-center flex-1 group">
+<div class="w-full bg-primary/10 rounded-t-lg group-hover:bg-primary/20 transition-colors h-[45%]"></div>
+<span class="mt-4 text-[10px] uppercase tracking-tighter text-on-surface-variant font-label">Fri</span>
+</div>
+<div class="flex flex-col items-center flex-1 group">
+<div class="w-full bg-primary/10 rounded-t-lg group-hover:bg-primary/20 transition-colors h-[95%]"></div>
+<span class="mt-4 text-[10px] uppercase tracking-tighter text-on-surface-variant font-label">Sat</span>
+</div>
+<div class="flex flex-col items-center flex-1 group">
+<div class="w-full bg-primary/10 rounded-t-lg group-hover:bg-primary/20 transition-colors h-[75%]"></div>
+<span class="mt-4 text-[10px] uppercase tracking-tighter text-on-surface-variant font-label">Sun</span>
+</div>
+</div>
+</div>
+<!-- Low Stock Alerts -->
+<div class="bg-surface-container-high p-8 rounded-xl">
+<div class="flex items-center gap-3 mb-8">
+<span class="material-symbols-outlined text-error">priority_high</span>
+<h2 class="text-xl font-bold text-primary">Priority Restock</h2>
+</div>
+<div class="space-y-4">
+<!-- Alert Item 1 -->
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest rounded-lg border-l-4 border-error/50">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-lg">science</span>
+</div>
+<div>
+<h4 class="text-sm font-bold text-on-surface">Al-Fares Perfume</h4>
+<p class="text-[10px] text-on-surface-variant font-label tracking-widest uppercase">2 Units left</p>
+</div>
+</div>
+<button class="p-2 hover:bg-error-container text-error rounded-full transition-colors">
+<span class="material-symbols-outlined text-lg">shopping_cart_checkout</span>
+</button>
+</div>
+<!-- Alert Item 2 -->
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest rounded-lg border-l-4 border-error/50">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-lg">dry_cleaning</span>
+</div>
+<div>
+<h4 class="text-sm font-bold text-on-surface">Silk Romal</h4>
+<p class="text-[10px] text-on-surface-variant font-label tracking-widest uppercase">0 Units left</p>
+</div>
+</div>
+<button class="p-2 hover:bg-error-container text-error rounded-full transition-colors">
+<span class="material-symbols-outlined text-lg">shopping_cart_checkout</span>
+</button>
+</div>
+<!-- Alert Item 3 -->
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest rounded-lg border-l-4 border-secondary/50">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-lg">spa</span>
+</div>
+<div>
+<h4 class="text-sm font-bold text-on-surface">Cambodi Oud</h4>
+<p class="text-[10px] text-on-surface-variant font-label tracking-widest uppercase">5 Units left</p>
+</div>
+</div>
+<button class="p-2 hover:bg-secondary-container text-secondary rounded-full transition-colors">
+<span class="material-symbols-outlined text-lg">shopping_cart_checkout</span>
+</button>
+</div>
+</div>
+<button class="w-full mt-8 py-3 border border-primary/20 rounded-xl text-primary text-sm font-bold hover:bg-primary/5 transition-colors uppercase tracking-widest">
+                        View All Alerts
+                    </button>
+</div>
+</div>
+<!-- Latest Collections Section -->
+<div class="mt-12">
+<div class="flex justify-between items-center mb-8">
+<h2 class="text-2xl font-bold text-primary">Artisanal Inventory Preview</h2>
+<a class="text-sm font-bold text-secondary flex items-center gap-2 group" href="#">
+                        Manage Inventory 
+                        <span class="material-symbols-outlined text-base group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<div class="relative h-64 rounded-2xl overflow-hidden group cursor-pointer">
+<img alt="Luxury perfume bottle" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="Exquisite crystal perfume bottle on a reflective surface with warm amber lighting and soft smoke effect" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDD9Sd57kM7STcCd-X4w4GrvTcwtrmycjIpbmhMJe6snsZtnI_gu2r1VbBYOM0iycChGqeEgTHLo_6sIi4PHiLyEqOZ4qyCHOrQFGFTHPw746GWZtat3lmijOp8nghkMwO6TKegckBo1MtJnyo5wdt2YG5eq583oUSkI0OPQoh0vt26J1J1i1c6nsTxmUrZvWNGTj2TLshHaFlMs4JdJhJF4zCyCyw_84HWwk7nFz52Ic_4zEsiheiKBYuIFnm9RYoCw09PgJ9AFCk"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/20 to-transparent p-6 flex flex-col justify-end">
+<span class="bg-secondary-fixed text-on-secondary-fixed text-[10px] px-2 py-1 rounded w-fit mb-2 uppercase font-bold tracking-widest">Premium Oud</span>
+<h3 class="text-white text-xl font-bold">Royal Cambodi Selection</h3>
+</div>
+</div>
+<div class="relative h-64 rounded-2xl overflow-hidden group cursor-pointer">
+<img alt="Silk fabrics" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="Intricate patterns of fine silk fabrics folded elegantly with natural morning light and soft shadows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5SbuWiIeOQ2SFp6WT0OWC6rFsketvfpNPE5YbeXMuGr3D-1wvTVSrvzSzUONtqM2TRxieW9U2ivK220v8evqFYL1wj4ivoOWrlS9VENIGLqiMt54jVNiGJeCtKA46G57yyT9uvtlAEZJYnLtaXlSCqn_X8_fx4aENenv-98LO9hiMXlUehFIHhgeDNEhF2F7zkHyA2NfBR-kwn1u3IrpJ4a-9eycnRrVhPUGaADO-G5WLRYtBFNAnHMv_UX3axzr9hFiHOLqwx7c"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/20 to-transparent p-6 flex flex-col justify-end">
+<span class="bg-secondary-fixed text-on-secondary-fixed text-[10px] px-2 py-1 rounded w-fit mb-2 uppercase font-bold tracking-widest">Textiles</span>
+<h3 class="text-white text-xl font-bold">Heritage Silk Collection</h3>
+</div>
+</div>
+<div class="hidden lg:block relative h-64 rounded-2xl overflow-hidden group cursor-pointer">
+<img alt="Islamic architecture prayer beads" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="Detail of handcrafted wooden prayer beads resting on an ornate carved desk in a sunlit library" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD0uMExUzR9yZvoqtPHnSBEhTygNRh_0pMqqV-M6-HK23gvfvide3a11DLbRrf807LmE6WecTKaSKHzitK2nRAWr6p2gkjqullayfltwBdIo8qUV3yr9oLJjDoik4yibhXCn2rsYOFGIHJLvpuX6079uCJxwh1P1v0k4NJMz6EnG-7BwnYAhjsKsunHx8ertVs_eWyK1t3lNTvATTBVuw6mguWjMECYVGi1RDl_Hl-UF5USxrmvxCy-aPgH1VKAhPjcIMUv-3pBxQw"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/20 to-transparent p-6 flex flex-col justify-end">
+<span class="bg-secondary-fixed text-on-secondary-fixed text-[10px] px-2 py-1 rounded w-fit mb-2 uppercase font-bold tracking-widest">Lifestyle</span>
+<h3 class="text-white text-xl font-bold">Artisanal Prayer Suite</h3>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Floating Action Button - Mobile Only -->
+<button class="md:hidden fixed bottom-8 right-8 w-14 h-14 bg-primary text-on-primary rounded-full shadow-2xl flex items-center justify-center z-50">
+<span class="material-symbols-outlined">add</span>
+</button>
+</body></html>
