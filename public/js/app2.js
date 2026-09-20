@@ -165,6 +165,15 @@ function writeRawDB(raw) {
 
 function initDB() { /* storage is initialized lazily by readRawDB */ }
 
+// Active business currency for all UI rendering (white-label: never hard-code 'Rs').
+function cur() {
+    try {
+        if (typeof state !== 'undefined' && state.settings && state.settings.currency) return state.settings.currency;
+        const db = getDB();
+        return (db.settings && db.settings.currency) || 'Rs';
+    } catch (e) { return 'Rs'; }
+}
+
 // Active-tenant view: every call site keeps working, now scoped to the current business.
 function getDB() {
     const rr = readRawDB();
@@ -689,7 +698,7 @@ function renderDashboard() {
             </div>
             <div class="stat-card" style="cursor:pointer;" onclick="viewTodaysOrders()">
                 <i class="stat-icon">🛒</i><h3>Today's Orders</h3><div class="value">${todayOrders.length}</div>
-                <div style="font-size:0.8rem;color:var(--text-muted);margin-top:4px;">Revenue: Rs ${todayRevenue.toLocaleString()}</div>
+                <div style="font-size:0.8rem;color:var(--text-muted);margin-top:4px;">Revenue: ${cur()} ${todayRevenue.toLocaleString()}</div>
             </div>
             <div class="stat-card gold-accent" style="cursor:pointer;" onclick="loadView('customers')">
                 <i class="stat-icon">👥</i><h3>Customers</h3><div class="value">${totalCustomers}</div>
@@ -718,7 +727,7 @@ function renderDashboard() {
                                 </div>
                             </div>
                             <div style="text-align:right;">
-                                <div style="font-weight:800;color:var(--primary);">Rs ${(s.total_amount || 0).toLocaleString()}</div>
+                                <div style="font-weight:800;color:var(--primary);">${cur()} ${(s.total_amount || 0).toLocaleString()}</div>
                                 ${isUnpaid ? '<span style="font-size:0.7rem;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:4px;font-weight:700;">UNPAID</span>' : ''}
                             </div>
                         </div>`;
@@ -794,7 +803,7 @@ function renderInventoryTable() {
 
         return `<tr style="${p.stock <= 0 ? 'background-color: #fff1f2;' : (p.stock <= threshold ? 'background-color: #fffbeb;' : '')}${p.status === 'inactive' ? 'opacity:0.6;' : ''}">
         <td><div style="display:flex;align-items:center;gap:12px;">${p.image_url ? `<img src="${p.image_url}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;">` : '📦'} <div><strong>${p.name}</strong>${brandHtml}</div></div></td>
-        <td>${p.category}</td><td>${p.cost_price.toLocaleString()}</td><td style="color:var(--primary);font-weight:600;">Rs ${p.sale_price.toLocaleString()}</td>
+        <td>${p.category}</td><td>${p.cost_price.toLocaleString()}</td><td style="color:var(--primary);font-weight:600;">${cur()} ${p.sale_price.toLocaleString()}</td>
         <td><strong style="color:${p.stock <= threshold ? 'var(--danger)' : 'inherit'};">${p.stock}</strong></td>
         <td><div style="display:flex; flex-wrap:wrap; gap:4px;">${statusHtml}</div></td>
         <td>
@@ -878,15 +887,15 @@ function renderInventory() {
                         </div>
                     </div>
                     <div class="compact-row">
-                        <div class="form-group"><label>Cost (Rs)</label><input type="number" id="prod-cost" class="form-control" required></div>
-                        <div class="form-group"><label>Sale Price (Rs)</label><input type="number" id="prod-price" class="form-control" required></div>
+                        <div class="form-group"><label>Cost (${cur()})</label><input type="number" id="prod-cost" class="form-control" required></div>
+                        <div class="form-group"><label>Sale Price (${cur()})</label><input type="number" id="prod-price" class="form-control" required></div>
                         <div class="form-group"><label>Stock</label><input type="number" id="prod-stock" class="form-control" required></div>
                         <div class="form-group"><label>Low Stock Alert</label><input type="number" id="prod-low-stock" class="form-control" required value="10"></div>
                     </div>
                     <div class="compact-row">
                         <div class="form-group"><label>Brand</label><input type="text" id="prod-brand" class="form-control" placeholder="e.g. National"></div>
                         <div class="form-group"><label>Unit</label><input type="text" id="prod-unit" class="form-control" placeholder="pcs / kg / litre" value="pcs"></div>
-                        <div class="form-group"><label>Wholesale Price (Rs)</label><input type="number" id="prod-wholesale" class="form-control" placeholder="0"></div>
+                        <div class="form-group"><label>Wholesale Price (${cur()})</label><input type="number" id="prod-wholesale" class="form-control" placeholder="0"></div>
                         <div class="form-group"><label>Expiry Date</label><input type="date" id="prod-expiry" class="form-control"></div>
                     </div>
                     <div class="compact-row">
@@ -1333,8 +1342,8 @@ function renderPOS() {
                     </div>
 
                     <div class="cart-footer-section">
-                        <div class="cart-summary-row"><span>Subtotal</span><span id="cart-subtotal">Rs 0</span></div>
-                        <div class="cart-summary-total"><span>Total</span><span class="total-amount" id="cart-total">Rs 0</span></div>
+                        <div class="cart-summary-row"><span>Subtotal</span><span id="cart-subtotal">${cur()} 0</span></div>
+                        <div class="cart-summary-total"><span>Total</span><span class="total-amount" id="cart-total">${cur()} 0</span></div>
                     </div>
 
                     <div class="cart-actions">
@@ -1477,7 +1486,7 @@ function renderPOSProducts(products) {
             <div class="product-info">
                 <div style="font-weight:600;color:#1e293b;margin-bottom:4px;">${p.name}</div>
                 ${p.color ? `<div style="font-size:0.75rem;margin-bottom:2px;"><span style="background:#e2e8f0;color:#334155;padding:2px 8px;border-radius:6px;font-weight:600;">🎨 ${p.color}</span></div>` : ''}
-                <div style="color:var(--primary);font-weight:700;">Rs ${p.sale_price.toLocaleString()}</div>
+                <div style="color:var(--primary);font-weight:700;">${cur()} ${p.sale_price.toLocaleString()}</div>
                 <div style="font-size:0.85rem;color:#64748B;margin-top:8px;">Stock: <strong style="color:${p.stock <= (p.low_stock_threshold !== undefined ? p.low_stock_threshold : 10) ? 'var(--danger)' : 'var(--success)'}">${p.stock}</strong></div>
             </div>
         </div>`).join('');
@@ -1595,15 +1604,15 @@ function renderCart() {
                 <div class="cart-item-info">
                     <div class="cart-item-name" title="${i.name}">${i.name}</div>
                     <div class="cart-price-edit-row">
-                        <span style="color:#94a3b8;font-size:0.75rem;">Rs</span>
+                        <span style="color:#94a3b8;font-size:0.75rem;">${cur()}</span>
                         <input type="number" class="pos-price-input" value="${i.price}" 
                             oninput="setCustomPrice('${i.product_id}', this.value)" 
                             onblur="renderCart()"
                             style="width:60px;" min="0" step="1">
                         <span style="color:#94a3b8;font-size:0.7rem;">× ${i.quantity} =</span>
-                        <span style="font-weight:800;color:#1e293b;font-size:0.82rem;">Rs ${lineTotal.toLocaleString()}</span>
+                        <span style="font-weight:800;color:#1e293b;font-size:0.82rem;">${cur()} ${lineTotal.toLocaleString()}</span>
                     </div>
-                    ${hasDiscount ? `<div class="cart-discount-badge">↓ Rs ${discountAmt.toLocaleString()} off (${discountPct}%)</div>` : ''}
+                    ${hasDiscount ? `<div class="cart-discount-badge">↓ ${cur()} ${discountAmt.toLocaleString()} off (${discountPct}%)</div>` : ''}
                 </div>
                 <div class="cart-qty-controls">
                     <button class="qty-btn" onclick="updateQty('${i.product_id}', -1)">−</button>
@@ -1618,8 +1627,8 @@ function renderCart() {
     const t = state.cart.reduce((s, i) => s + (i.price * i.quantity), 0);
     const el1 = document.getElementById('cart-subtotal');
     const el2 = document.getElementById('cart-total');
-    if(el1) el1.textContent = `Rs ${t.toLocaleString()}`;
-    if(el2) el2.textContent = `Rs ${t.toLocaleString()}`;
+    if(el1) el1.textContent = `${cur()} ${t.toLocaleString()}`;
+    if(el2) el2.textContent = `${cur()} ${t.toLocaleString()}`;
 }
 
 window.removeCartItem = function(id) {
@@ -1639,8 +1648,8 @@ window.setCustomPrice = function(id, val) {
     const t = state.cart.reduce((s, item) => s + (item.price * item.quantity), 0);
     const el1 = document.getElementById('cart-subtotal');
     const el2 = document.getElementById('cart-total');
-    if(el1) el1.textContent = `Rs ${t.toLocaleString()}`;
-    if(el2) el2.textContent = `Rs ${t.toLocaleString()}`;
+    if(el1) el1.textContent = `${cur()} ${t.toLocaleString()}`;
+    if(el2) el2.textContent = `${cur()} ${t.toLocaleString()}`;
     if(!document.getElementById('checkout-modal').classList.contains('hidden')) renderCheckoutReview();
 }
 
@@ -1677,12 +1686,13 @@ window.renderCheckoutReview = function() {
         return s;
     }, 0);
 
-    // Tax breakdown
+    // Tax breakdown — total/savings are already post-discount (item.price is the
+    // reduced price), so tax applies to the full subtotal; discount is display-only.
     const subtotal = total;
     const disc = totalSavings;
     const taxRate = parseFloat(db.settings.tax_rate) || 0;
-    const taxAmt = Math.max(0, subtotal - disc) * taxRate / 100;
-    const grandTotal = Math.max(0, subtotal - disc) + taxAmt;
+    const taxAmt = subtotal * taxRate / 100;
+    const grandTotal = subtotal + taxAmt;
 
     container.innerHTML = `
         <div style="background: #f8fafc; padding: 1.2rem; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 1.5rem; display: grid; grid-template-columns: 1fr 1.5fr; gap: 1rem;">
@@ -1714,7 +1724,7 @@ window.renderCheckoutReview = function() {
                         <tr style="border-bottom: 1px solid #f1f5f9;">
                             <td style="padding: 12px; font-weight: 500;">
                                 ${item.name}
-                                ${hasDiscount ? `<div class="cart-discount-badge" style="margin-top:4px;">\u2193 Rs ${discountAmt.toLocaleString()} off (${discountPct}%)</div>` : ''}
+                                ${hasDiscount ? `<div class="cart-discount-badge" style="margin-top:4px;">\u2193 ${cur()} ${discountAmt.toLocaleString()} off (${discountPct}%)</div>` : ''}
                             </td>
                             <td style="padding: 12px; text-align: center;">
                                 <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
@@ -1723,7 +1733,7 @@ window.renderCheckoutReview = function() {
                                     <button onclick="updateQty(${item.product_id}, 1)" style="width:24px; height:24px; border-radius:4px; border:1px solid #cbd5e1; background:white; cursor:pointer;">+</button>
                                 </div>
                             </td>
-                            <td style="padding: 12px; text-align: right; font-weight: 700;">Rs ${(item.price * item.quantity).toLocaleString()}</td>
+                            <td style="padding: 12px; text-align: right; font-weight: 700;">${cur()} ${(item.price * item.quantity).toLocaleString()}</td>
                         </tr>
                     `}).join('')}
                 </tbody>
@@ -1732,16 +1742,16 @@ window.renderCheckoutReview = function() {
 
         ${totalSavings > 0 ? `<div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; background: #ecfdf5; padding: 0.8rem 1.5rem; border-radius: 10px; border: 1px solid #a7f3d0;">
             <span style="font-size: 0.95rem; font-weight: 700; color: #065f46;">💰 Total Discount Given</span>
-            <span style="font-size: 1.1rem; font-weight: 800; color: #059669;">- Rs ${totalSavings.toLocaleString()}</span>
+            <span style="font-size: 1.1rem; font-weight: 800; color: #059669;">- ${cur()} ${totalSavings.toLocaleString()}</span>
         </div>` : ''}
 
         <div style="margin-top: ${totalSavings > 0 ? '0.8rem' : '1.5rem'}; background: #f0f9ff; padding: 1rem 1.5rem; border-radius: 12px; border: 1px solid #bae6fd;">
-            <div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#0369a1;margin-bottom:0.3rem;"><span>Subtotal</span><span style="font-weight:700;">Rs ${subtotal.toLocaleString()}</span></div>
-            ${disc > 0 ? '<div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#065f46;margin-bottom:0.3rem;"><span>Discount</span><span style="font-weight:700;">- Rs ' + disc.toLocaleString() + '</span></div>' : ''}
-            ${taxRate > 0 ? '<div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#0369a1;margin-bottom:0.3rem;"><span>Tax (' + taxRate + '%)</span><span style="font-weight:700;">Rs ' + Math.round(taxAmt).toLocaleString() + '</span></div>' : ''}
+            <div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#0369a1;margin-bottom:0.3rem;"><span>Subtotal</span><span style="font-weight:700;">${cur()} ${subtotal.toLocaleString()}</span></div>
+            ${disc > 0 ? '<div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#065f46;margin-bottom:0.3rem;"><span>Discount</span><span style="font-weight:700;">- ' + cur() + ' ' + disc.toLocaleString() + '</span></div>' : ''}
+            ${taxRate > 0 ? '<div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#0369a1;margin-bottom:0.3rem;"><span>Tax (' + taxRate + '%)</span><span style="font-weight:700;">' + cur() + ' ' + Math.round(taxAmt).toLocaleString() + '</span></div>' : ''}
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.5rem;padding-top:0.7rem;border-top:2px dashed #bae6fd;">
                 <span style="font-size: 1.1rem; font-weight: 600; color: #0369a1;">Order Total</span>
-                <span style="font-size: 1.5rem; font-weight: 900; color: #0369a1;">Rs ${Math.round(grandTotal).toLocaleString()}</span>
+                <span style="font-size: 1.5rem; font-weight: 900; color: #0369a1;">${cur()} ${Math.round(grandTotal).toLocaleString()}</span>
             </div>
         </div>
     `;
@@ -1815,7 +1825,7 @@ function renderSalesSummary() {
     const headerTitle = isTodayOnly ? `Today's Orders (${salesData.length})` : 'Daily Transaction Log';
     const filterBanner = isTodayOnly ? `<div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem;padding:10px 16px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;">
         <span style="font-size:1.1rem;">📅</span>
-        <span style="font-weight:700;color:#065f46;font-size:0.9rem;">Showing today's orders only — Revenue: Rs ${todayRevenue.toLocaleString()}</span>
+        <span style="font-weight:700;color:#065f46;font-size:0.9rem;">Showing today's orders only — Revenue: ${cur()} ${todayRevenue.toLocaleString()}</span>
         <button onclick="clearTodayFilter()" style="margin-left:auto;border:none;background:#065f46;color:white;padding:5px 14px;border-radius:6px;font-size:0.8rem;font-weight:700;cursor:pointer;">Show All Orders</button>
     </div>` : '';
     const db = getDB();
@@ -1835,8 +1845,8 @@ function renderSalesSummary() {
             <td style="font-weight:600;">${cust.name}</td>
             <td>${s.payment_method||'Cash'}</td>
             <td>${(s.items || []).reduce((a,b)=>a+b.quantity,0)}</td>
-            <td style="font-weight:700;">Rs ${s.total_amount.toLocaleString()}</td>
-            <td>${statusBadge}${ki.paidAmt > 0 && ki.status !== 'paid' ? '<div style="font-size:0.7rem;color:#64748b;margin-top:2px;">Paid: Rs '+ki.paidAmt.toLocaleString()+'</div>' : ''}</td>
+            <td style="font-weight:700;">${cur()} ${s.total_amount.toLocaleString()}</td>
+            <td>${statusBadge}${ki.paidAmt > 0 && ki.status !== 'paid' ? '<div style="font-size:0.7rem;color:#64748b;margin-top:2px;">Paid: ' + cur() + ' '+ki.paidAmt.toLocaleString()+'</div>' : ''}</td>
         </tr>`;
     }).join('')}${salesData.length === 0 ? '<tr><td colspan="7" style="text-align:center;padding:3rem;color:var(--text-muted);">No orders found for today.</td></tr>' : ''}</tbody></table></div>`;
 }
@@ -1859,7 +1869,7 @@ function renderReceiptLog() {
             <td>#${s.id}</td>
             <td>${new Date(s.created_at).toLocaleString()}</td>
             <td style="font-weight:600;">${cust.name}</td>
-            <td style="font-weight:700; color:var(--primary);">Rs ${s.total_amount.toLocaleString()}</td>
+            <td style="font-weight:700; color:var(--primary);">${cur()} ${s.total_amount.toLocaleString()}</td>
             <td><button class="btn btn-secondary" onclick="showReceiptModal(${s.id})">👁️ View Receipt</button></td>
         </tr>`;
     }).join('') || '<tr><td colspan="5" style="text-align:center; padding:3rem; color:var(--text-muted);">No matching receipts found.</td></tr>';
@@ -2042,19 +2052,19 @@ window.showReceiptModal = function(saleId) {
         <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; color: #000; margin-bottom: ${hasDiscount ? '2px' : '8px'}; padding: 2px 0;">
             <span style="flex: 2.5; text-align: left; padding-right: 5px;">${item.name}</span>
             <span style="flex: 0.5; text-align: center;">${item.quantity}</span>
-            <span style="flex: 1; text-align: right;">Rs ${(parseFloat(item.price) * parseInt(item.quantity)).toLocaleString()}</span>
+            <span style="flex: 1; text-align: right;">${cur()} ${(parseFloat(item.price) * parseInt(item.quantity)).toLocaleString()}</span>
         </div>
         ${hasDiscount ? `<div style="margin-bottom: 8px; padding-left: 4px; font-size: 11px; color: #000;">
-            <span style="text-decoration: line-through; color: #555;">Rs ${item.original_price.toLocaleString()}</span>
-            → Rs ${parseFloat(item.price).toLocaleString()} 
-            <strong>(${discountPctPerUnit}% off, saved Rs ${discountAmt.toLocaleString()})</strong>
+            <span style="text-decoration: line-through; color: #555;">${cur()} ${item.original_price.toLocaleString()}</span>
+            → ${cur()} ${parseFloat(item.price).toLocaleString()} 
+            <strong>(${discountPctPerUnit}% off, saved ${cur()} ${discountAmt.toLocaleString()})</strong>
         </div>` : ''}`;
     }).join('');
     
     // Build total savings summary if any discount was given
     const savingsHtml = totalSaved > 0 ? `<div style="display:flex; justify-content:space-between; font-size:12px; font-weight:800; color:#000; padding:6px 0; margin-top:4px; border-top:1px dashed #999;">
         <span>💰 YOU SAVED</span>
-        <span>Rs ${totalSaved.toLocaleString()}</span>
+        <span>${cur()} ${totalSaved.toLocaleString()}</span>
     </div>` : '';
 
     document.getElementById('receipt-items').innerHTML = (itemsHtml || '<div style="text-align:center; padding:10px;">No items found</div>') + savingsHtml;
@@ -2065,7 +2075,7 @@ window.showReceiptModal = function(saleId) {
         if (sale.tax_rate > 0 && sale.tax_amount > 0) {
             taxLine.style.display = 'block';
             taxLine.innerHTML = '<div style="display:flex;justify-content:space-between;font-size:13px;color:#000;padding:2px 0;">' +
-                '<span>Tax (' + sale.tax_rate + '%)</span><span>Rs ' + Math.round(sale.tax_amount).toLocaleString() + '</span></div>';
+                '<span>Tax (' + sale.tax_rate + '%)</span><span>' + cur() + ' ' + Math.round(sale.tax_amount).toLocaleString() + '</span></div>';
         } else {
             taxLine.style.display = 'none';
             taxLine.innerHTML = '';
@@ -2089,7 +2099,7 @@ window.showReceiptModal = function(saleId) {
             paymentStamp.style.borderColor = '#dc2626';
         } else if(ki.status === 'partial') {
             paymentStamp.style.display = 'inline-block';
-            paymentStamp.textContent = 'PARTIAL — Rs ' + ki.paidAmt.toLocaleString() + ' / ' + ki.totalAmt.toLocaleString();
+            paymentStamp.textContent = 'PARTIAL — ' + cur() + ' ' + ki.paidAmt.toLocaleString() + ' / ' + ki.totalAmt.toLocaleString();
             paymentStamp.style.color = '#c2410c';
             paymentStamp.style.borderColor = '#c2410c';
         } else {
@@ -2113,7 +2123,7 @@ window.showReceiptModal = function(saleId) {
                         detailsHtml += ' <span style="font-size:9px;color:#1565C0;font-weight:600;">(Advance)</span>';
                     }
                     detailsHtml += '</span>';
-                    detailsHtml += '<span style="font-weight:700;color:#2E7D32;">Rs ' + p.amount.toLocaleString() + '</span>';
+                    detailsHtml += '<span style="font-weight:700;color:#2E7D32;">' + cur() + ' ' + p.amount.toLocaleString() + '</span>';
                     detailsHtml += '</div>';
                 });
                 detailsHtml += '</div>';
@@ -2125,15 +2135,15 @@ window.showReceiptModal = function(saleId) {
             }
             
             detailsHtml += '<div style="margin-top:8px;padding:8px 0;border-top:1px dashed #000;">';
-            detailsHtml += '<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0;"><span style="color:#555;font-weight:600;">Total Amount</span><span style="font-weight:800;color:#1a1a1a;">Rs ' + ki.totalAmt.toLocaleString() + '</span></div>';
-            detailsHtml += '<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0;"><span style="color:#555;font-weight:600;">Total Paid</span><span style="font-weight:800;color:#2E7D32;">Rs ' + displayPaidAmt.toLocaleString() + '</span></div>';
-            detailsHtml += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;font-weight:800;"><span style="color:' + (ki.remaining > 0 ? '#C62828' : '#2E7D32') + ';">Remaining Balance</span><span style="color:' + (ki.remaining > 0 ? '#C62828' : '#2E7D32') + ';">Rs ' + ki.remaining.toLocaleString() + '</span></div>';
+            detailsHtml += '<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0;"><span style="color:#555;font-weight:600;">Total Amount</span><span style="font-weight:800;color:#1a1a1a;">' + cur() + ' ' + ki.totalAmt.toLocaleString() + '</span></div>';
+            detailsHtml += '<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0;"><span style="color:#555;font-weight:600;">Total Paid</span><span style="font-weight:800;color:#2E7D32;">' + cur() + ' ' + displayPaidAmt.toLocaleString() + '</span></div>';
+            detailsHtml += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;font-weight:800;"><span style="color:' + (ki.remaining > 0 ? '#C62828' : '#2E7D32') + ';">Remaining Balance</span><span style="color:' + (ki.remaining > 0 ? '#C62828' : '#2E7D32') + ';">' + cur() + ' ' + ki.remaining.toLocaleString() + '</span></div>';
             detailsHtml += '</div>';
             // Advance info
             if (ki.advanceUsed > 0 || ki.advanceBalance > 0) {
                 detailsHtml += '<div style="margin-top:6px;padding:6px 8px;background:#E3F2FD;border:1px solid #90CAF9;border-radius:6px;">';
                 if (ki.advanceUsed > 0) {
-                    detailsHtml += '<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;"><span style="color:#1565C0;font-weight:600;">Used from Advance</span><span style="font-weight:700;color:#1565C0;">Rs ' + ki.advanceUsed.toLocaleString() + '</span></div>';
+                    detailsHtml += '<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;"><span style="color:#1565C0;font-weight:600;">Used from Advance</span><span style="font-weight:700;color:#1565C0;">' + cur() + ' ' + ki.advanceUsed.toLocaleString() + '</span></div>';
                 }
                 if (ki.advanceBalance > 0) {
                     var recvRecs = (ki.advanceHistory || []).filter(function(h){ return h.type === 'received'; });
@@ -2141,7 +2151,7 @@ window.showReceiptModal = function(saleId) {
                     if (recvRecs.length > 0) {
                         sinceStr = ' <span style="font-size:9px;color:#1565C0;">(Since ' + new Date(recvRecs[recvRecs.length-1].date).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) + ')</span>';
                     }
-                    detailsHtml += '<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;"><span style="color:#1565C0;font-weight:600;">Advance Balance' + sinceStr + '</span><span style="font-weight:700;color:#1565C0;">Rs ' + ki.advanceBalance.toLocaleString() + '</span></div>';
+                    detailsHtml += '<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;"><span style="color:#1565C0;font-weight:600;">Advance Balance' + sinceStr + '</span><span style="font-weight:700;color:#1565C0;">' + cur() + ' ' + ki.advanceBalance.toLocaleString() + '</span></div>';
                 }
                 detailsHtml += '</div>';
             }
@@ -2540,17 +2550,17 @@ function renderFinancials() {
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem;">
                 <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-radius: 20px; padding: 1.5rem; color: white;">
                     <div style="color: #94a3b8; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; margin-bottom: 0.5rem;">Inventory Value</div>
-                    <div style="font-size: 1.8rem; font-weight: 800;">Rs ${inventoryValue.toLocaleString()}</div>
+                    <div style="font-size: 1.8rem; font-weight: 800;">${cur()} ${inventoryValue.toLocaleString()}</div>
                     <div style="margin-top: 1rem; font-size: 0.8rem; color: #38bdf8;">Current Stock Assets</div>
                 </div>
                 <div style="background: linear-gradient(135deg, #d97706 0%, #b45309 100%); border-radius: 20px; padding: 1.5rem; color: white;">
                     <div style="color: #fde68a; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; margin-bottom: 0.5rem;">Estimated Zakat</div>
-                    <div style="font-size: 1.8rem; font-weight: 800;">Rs ${zakat.toLocaleString()}</div>
+                    <div style="font-size: 1.8rem; font-weight: 800;">${cur()} ${zakat.toLocaleString()}</div>
                     <div style="margin-top: 1rem; font-size: 0.8rem; color: #fef3c7;">Purify Your Wealth</div>
                 </div>
                 <div style="background: white; border-radius: 20px; padding: 1.5rem; border: 1px solid #e2e8f0;">
                     <div style="color: #64748b; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; margin-bottom: 0.5rem;">Current Month Sales</div>
-                    <div style="font-size: 1.8rem; font-weight: 800; color: #10b981;">Rs ${Math.round(mSales).toLocaleString()}</div>
+                    <div style="font-size: 1.8rem; font-weight: 800; color: #10b981;">${cur()} ${Math.round(mSales).toLocaleString()}</div>
                     <div style="margin-top: 1rem; font-size: 0.8rem; color: #94a3b8;">Total sales this month</div>
                 </div>
             </div>
@@ -2570,23 +2580,23 @@ function renderFinancials() {
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
                         <div style="background: #f8fafc; border-radius: 16px; padding: 1.5rem; text-align: center;">
                             <div style="font-size: 0.9rem; color: #64748b;">Total Sales</div>
-                            <div style="font-size: 1.6rem; font-weight: 800;">Rs ${currentSales.toLocaleString()}</div>
+                            <div style="font-size: 1.6rem; font-weight: 800;">${cur()} ${currentSales.toLocaleString()}</div>
                         </div>
                         <div style="background: #f0fdf4; border-radius: 16px; padding: 1.5rem; text-align: center; border: 1px solid #bbf7d0;">
                             <div style="font-size: 0.9rem; color: #166534;">Gross Profit</div>
-                            <div style="font-size: 1.6rem; font-weight: 800; color: #16a34a;">Rs ${currentGrossProf.toLocaleString()}</div>
+                            <div style="font-size: 1.6rem; font-weight: 800; color: #16a34a;">${cur()} ${currentGrossProf.toLocaleString()}</div>
                         </div>
                         <div style="background: #fef2f2; border-radius: 16px; padding: 1.5rem; text-align: center; border: 1px solid #fecaca;">
                             <div style="font-size: 0.9rem; color: #991b1b;">Total Expenses</div>
-                            <div style="font-size: 1.6rem; font-weight: 800; color: #ef4444;">Rs ${currentExp.toLocaleString()}</div>
+                            <div style="font-size: 1.6rem; font-weight: 800; color: #ef4444;">${cur()} ${currentExp.toLocaleString()}</div>
                         </div>
                         <div style="background: #ecfdf5; border-radius: 16px; padding: 1.5rem; text-align: center; border: 1px solid #10b981;">
                             <div style="font-size: 0.9rem; color: #065f46;">Net Profit</div>
-                            <div style="font-size: 1.8rem; font-weight: 800; color: #10b981;">Rs ${currentNetProf.toLocaleString()}</div>
+                            <div style="font-size: 1.8rem; font-weight: 800; color: #10b981;">${cur()} ${currentNetProf.toLocaleString()}</div>
                         </div>
                         <div style="background: #eff6ff; border-radius: 16px; padding: 1.5rem; text-align: center; border: 1px solid #3b82f6;">
                             <div style="font-size: 0.9rem; color: #1e40af;">Current Investment</div>
-                            <div style="font-size: 1.8rem; font-weight: 800; color: #1d4ed8;">Rs ${inventoryValue.toLocaleString()}</div>
+                            <div style="font-size: 1.8rem; font-weight: 800; color: #1d4ed8;">${cur()} ${inventoryValue.toLocaleString()}</div>
                         </div>
                     </div>
 
@@ -2612,16 +2622,16 @@ function renderFinancials() {
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
                         <div style="background: #f8fafc; padding: 1.5rem; border-radius: 16px; border: 1px solid #e2e8f0;">
                             <div style="font-size: 0.8rem; color: #64748b; font-weight: 700; text-transform: uppercase;">Today's Costs</div>
-                            <div style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin-top: 0.5rem;">Rs ${dExp.toLocaleString()}</div>
+                            <div style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin-top: 0.5rem;">${cur()} ${dExp.toLocaleString()}</div>
                         </div>
                         <div style="background: #f8fafc; padding: 1.5rem; border-radius: 16px; border: 1px solid #e2e8f0;">
                             <div style="font-size: 0.8rem; color: #64748b; font-weight: 700; text-transform: uppercase;">This Week</div>
-                            <div style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin-top: 0.5rem;">Rs ${wExp.toLocaleString()}</div>
+                            <div style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin-top: 0.5rem;">${cur()} ${wExp.toLocaleString()}</div>
                             <div style="font-size: 0.75rem; color: ${weekTrend > 0 ? '#ef4444' : '#10b981'}; margin-top: 0.5rem; font-weight: 700;">${weekTrend >= 0 ? '↑' : '↓'} ${Math.abs(weekTrend).toFixed(1)}% vs last week</div>
                         </div>
                         <div style="background: #eff6ff; padding: 1.5rem; border-radius: 16px; border: 1px solid #dbeafe;">
                             <div style="font-size: 0.8rem; color: #1d4ed8; font-weight: 700; text-transform: uppercase;">Est. Month End Expenses</div>
-                            <div style="font-size: 1.5rem; font-weight: 800; color: #1e40af; margin-top: 0.5rem;">Rs ${Math.round(projectedExp).toLocaleString()}</div>
+                            <div style="font-size: 1.5rem; font-weight: 800; color: #1e40af; margin-top: 0.5rem;">${cur()} ${Math.round(projectedExp).toLocaleString()}</div>
                         </div>
                     </div>
                     <div style="border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
@@ -2631,7 +2641,7 @@ function renderFinancials() {
                                 ${Object.keys(expCats).map(catId => {
                                     const stats = catStats[catId];
                                     const perc = mExp > 0 ? (stats.month / mExp) * 100 : 0;
-                                    return `<tr><td style="padding: 1.2rem; border-bottom: 1px solid #f1f5f9; font-weight: 700; color: #1e293b;">${expCats[catId]}</td><td style="padding: 1.2rem; border-bottom: 1px solid #f1f5f9;">Rs ${stats.today.toLocaleString()}</td><td style="padding: 1.2rem; border-bottom: 1px solid #f1f5f9;">Rs ${stats.week.toLocaleString()}</td><td style="padding: 1.2rem; border-bottom: 1px solid #f1f5f9; font-weight: 800;">Rs ${stats.month.toLocaleString()}</td><td style="padding: 1.2rem; border-bottom: 1px solid #f1f5f9;"><div style="display: flex; align-items: center; gap: 10px;"><div style="flex: 1; height: 8px; background: #f1f5f9; border-radius: 10px; overflow: hidden;"><div style="width: ${perc}%; height: 100%; background: #3b82f6;"></div></div><span style="font-size: 0.8rem; color: #64748b; font-weight: 700;">${perc.toFixed(0)}%</span></div></td></tr>`;
+                                    return `<tr><td style="padding: 1.2rem; border-bottom: 1px solid #f1f5f9; font-weight: 700; color: #1e293b;">${expCats[catId]}</td><td style="padding: 1.2rem; border-bottom: 1px solid #f1f5f9;">${cur()} ${stats.today.toLocaleString()}</td><td style="padding: 1.2rem; border-bottom: 1px solid #f1f5f9;">${cur()} ${stats.week.toLocaleString()}</td><td style="padding: 1.2rem; border-bottom: 1px solid #f1f5f9; font-weight: 800;">${cur()} ${stats.month.toLocaleString()}</td><td style="padding: 1.2rem; border-bottom: 1px solid #f1f5f9;"><div style="display: flex; align-items: center; gap: 10px;"><div style="flex: 1; height: 8px; background: #f1f5f9; border-radius: 10px; overflow: hidden;"><div style="width: ${perc}%; height: 100%; background: #3b82f6;"></div></div><span style="font-size: 0.8rem; color: #64748b; font-weight: 700;">${perc.toFixed(0)}%</span></div></td></tr>`;
                                 }).join('')}
                             </tbody>
                         </table>
@@ -2827,11 +2837,11 @@ function renderGeneralExpenses() {
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1.5rem;">
             <div style="background:white;border-radius:16px;padding:1.5rem;text-align:center;border:1px solid #e2e8f0;">
                 <div style="font-size:0.8rem;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:0.5rem;">This Month</div>
-                <div style="font-size:1.6rem;font-weight:800;color:#ef4444;">Rs ${thisMonthTotal.toLocaleString()}</div>
+                <div style="font-size:1.6rem;font-weight:800;color:#ef4444;">${cur()} ${thisMonthTotal.toLocaleString()}</div>
             </div>
             <div style="background:white;border-radius:16px;padding:1.5rem;text-align:center;border:1px solid #e2e8f0;">
                 <div style="font-size:0.8rem;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:0.5rem;">Last Month</div>
-                <div style="font-size:1.6rem;font-weight:800;color:#f59e0b;">Rs ${lastMonthTotal.toLocaleString()}</div>
+                <div style="font-size:1.6rem;font-weight:800;color:#f59e0b;">${cur()} ${lastMonthTotal.toLocaleString()}</div>
             </div>
             <div style="background:white;border-radius:16px;padding:1.5rem;text-align:center;border:1px solid #e2e8f0;">
                 <div style="font-size:0.8rem;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:0.5rem;">Trend</div>
@@ -2840,7 +2850,7 @@ function renderGeneralExpenses() {
         </div>
 
         ${Object.keys(catTotals).length > 0 ? `<div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1.5rem;">
-            ${Object.entries(catTotals).sort((a,b)=>b[1]-a[1]).map(([cat,amt]) => `<span style="background:#f1f5f9;padding:6px 14px;border-radius:20px;font-size:0.8rem;font-weight:600;border:1px solid #e2e8f0;">${cat}: <strong style="color:#ef4444;">Rs ${amt.toLocaleString()}</strong></span>`).join('')}
+            ${Object.entries(catTotals).sort((a,b)=>b[1]-a[1]).map(([cat,amt]) => `<span style="background:#f1f5f9;padding:6px 14px;border-radius:20px;font-size:0.8rem;font-weight:600;border:1px solid #e2e8f0;">${cat}: <strong style="color:#ef4444;">${cur()} ${amt.toLocaleString()}</strong></span>`).join('')}
         </div>` : ''}
 
         <div class="dashboard-grid">
@@ -2850,7 +2860,7 @@ function renderGeneralExpenses() {
                     <form id="expense-form">
                         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-bottom:1rem;">
                             <div class="form-group">
-                                <label style="font-weight:600; margin-bottom:0.5rem; display:block;">Amount (Rs)</label>
+                                <label style="font-weight:600; margin-bottom:0.5rem; display:block;">Amount (${cur()})</label>
                                 <input type="number" id="exp-amount" class="form-control" required style="width:100%; padding: 0.8rem; border-radius: 10px; border: 1px solid #e2e8f0;">
                             </div>
                             <div class="form-group">
@@ -2898,7 +2908,7 @@ function renderGeneralExpenses() {
                             <td>${new Date(e.created_at).toLocaleDateString()}</td>
                             <td><span class="badge ${e.category.includes('Worker') ? 'badge-success' : 'badge-warning'}" style="font-size:0.8rem;">${e.category}</span></td>
                             <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e.description}</td>
-                            <td style="font-weight:700; color:#ef4444;">Rs ${e.amount.toLocaleString()}</td>
+                            <td style="font-weight:700; color:#ef4444;">${cur()} ${e.amount.toLocaleString()}</td>
                             <td><button class="btn btn-secondary" style="padding:0.4rem 0.8rem; font-size:0.8rem;" onclick="deleteExpense(${e.id})">Remove</button></td>
                         </tr>
                     `).join('')}
@@ -2945,7 +2955,7 @@ function renderWorkerManagement() {
                         <input type="text" id="worker-phone" class="form-control" required style="width:100%; padding: 0.8rem; border-radius: 8px; border: 1px solid #e2e8f0; background:#f8fafc;">
                     </div>
                     <div class="form-group" style="margin-bottom:1.8rem;">
-                        <label style="font-weight:600; margin-bottom:0.5rem; display:block; color:#475569;">Base Salary (Rs)</label>
+                        <label style="font-weight:600; margin-bottom:0.5rem; display:block; color:#475569;">Base Salary (${cur()})</label>
                         <input type="number" id="worker-salary" class="form-control" required style="width:100%; padding: 0.8rem; border-radius: 8px; border: 1px solid #e2e8f0; background:#f8fafc;">
                     </div>
                     <button type="submit" class="btn btn-primary" style="width:100%; padding: 1rem; border-radius: 8px; justify-content: center; font-weight: 700; transition:all 0.2s;">Save Worker</button>
@@ -2981,8 +2991,8 @@ function renderWorkerManagement() {
                                 </div>
                                 <div style="font-size:0.85rem; color:#64748b; margin-bottom:4px;">📞 ${w.phone}</div>
                                 <div style="display:flex; gap:1.5rem; margin-top:8px;">
-                                    <div><span style="font-size:0.75rem; color:#94a3b8; text-transform:uppercase; font-weight:700;">Base Salary</span> <span style="font-weight:700; color:#1e293b;">Rs ${w.salary.toLocaleString()}</span></div>
-                                    ${advanceBal > 0 ? `<div><span style="font-size:0.75rem; color:#ef4444; text-transform:uppercase; font-weight:700;">Active Advance</span> <span style="font-weight:700; color:#ef4444;">Rs ${advanceBal.toLocaleString()}</span></div>` : ''}
+                                    <div><span style="font-size:0.75rem; color:#94a3b8; text-transform:uppercase; font-weight:700;">Base Salary</span> <span style="font-weight:700; color:#1e293b;">${cur()} ${w.salary.toLocaleString()}</span></div>
+                                    ${advanceBal > 0 ? `<div><span style="font-size:0.75rem; color:#ef4444; text-transform:uppercase; font-weight:700;">Active Advance</span> <span style="font-weight:700; color:#ef4444;">${cur()} ${advanceBal.toLocaleString()}</span></div>` : ''}
                                 </div>
                             </div>
                         </div>
@@ -3071,7 +3081,7 @@ window.showWorkerPaymentModal = function(workerId) {
             <div style="background:#0f172a; padding:1.5rem 2rem; display:flex; justify-content:space-between; align-items:center;">
                 <div style="color:white;">
                     <h3 style="margin:0; font-size:1.4rem; font-weight:800;">${worker.name}</h3>
-                    <div style="font-size:0.9rem; color:#94a3b8; margin-top:4px;">Base Salary: Rs ${worker.salary.toLocaleString()}</div>
+                    <div style="font-size:0.9rem; color:#94a3b8; margin-top:4px;">Base Salary: ${cur()} ${worker.salary.toLocaleString()}</div>
                 </div>
                 <button onclick="document.getElementById('worker-pay-modal').remove()" style="background:none; border:none; color:#94a3b8; font-size:2rem; cursor:pointer; line-height:1;">&times;</button>
             </div>
@@ -3095,15 +3105,15 @@ window.showWorkerPaymentModal = function(workerId) {
                         <div style="background:#f1f5f9; border-radius:12px; padding:1.5rem; margin-bottom:1.5rem; border:1px solid #e2e8f0;">
                             <div style="display:flex; justify-content:space-between; margin-bottom:0.8rem;">
                                 <span style="color:#475569; font-weight:600;">Base Salary</span>
-                                <span style="font-weight:700; color:#0f172a;">Rs ${worker.salary.toLocaleString()}</span>
+                                <span style="font-weight:700; color:#0f172a;">${cur()} ${worker.salary.toLocaleString()}</span>
                             </div>
                             <div style="display:flex; justify-content:space-between; margin-bottom:0.8rem; padding-bottom:0.8rem; border-bottom:1px dashed #cbd5e1;">
                                 <span style="color:#ef4444; font-weight:600;">Advance Deduction</span>
-                                <span style="font-weight:700; color:#ef4444;">- Rs ${advanceDeducted.toLocaleString()}</span>
+                                <span style="font-weight:700; color:#ef4444;">- ${cur()} ${advanceDeducted.toLocaleString()}</span>
                             </div>
                             <div style="display:flex; justify-content:space-between;">
                                 <span style="color:#0f172a; font-weight:800; font-size:1.1rem;">Net Payable</span>
-                                <span style="font-weight:800; color:#10b981; font-size:1.2rem;">Rs ${netSalary.toLocaleString()}</span>
+                                <span style="font-weight:800; color:#10b981; font-size:1.2rem;">${cur()} ${netSalary.toLocaleString()}</span>
                             </div>
                         </div>
                         <button type="button" class="btn btn-primary" style="width:100%; padding:1.2rem; border-radius:12px; justify-content:center; font-size:1.1rem; font-weight:800;" onclick="processWorkerPayment(${worker.id}, 'salary', ${netSalary}, ${advanceDeducted})">Process Salary Payment</button>
@@ -3117,13 +3127,13 @@ window.showWorkerPaymentModal = function(workerId) {
                             <span style="font-size:1.5rem;">⚠️</span>
                             <div>
                                 <div style="color:#be123c; font-weight:700; font-size:0.9rem;">Existing Advance Balance</div>
-                                <div style="color:#e11d48; font-weight:800; font-size:1.1rem;">Rs ${advanceBal.toLocaleString()}</div>
+                                <div style="color:#e11d48; font-weight:800; font-size:1.1rem;">${cur()} ${advanceBal.toLocaleString()}</div>
                             </div>
                         </div>
                     ` : ''}
                     <div class="form-group" style="margin-bottom:1rem;">
                         <label style="font-weight:700; color:#1e293b; margin-bottom:0.5rem; display:block;">Amount to Advance</label>
-                        <input type="number" id="w-adv-amount" class="form-control" placeholder="Rs" style="width:100%; padding:1rem; font-size:1.2rem; border-radius:12px;">
+                        <input type="number" id="w-adv-amount" class="form-control" placeholder="${cur()}" style="width:100%; padding:1rem; font-size:1.2rem; border-radius:12px;">
                     </div>
                     <div class="form-group" style="margin-bottom:1.5rem;">
                         <label style="font-weight:700; color:#1e293b; margin-bottom:0.5rem; display:block;">Reason (Optional)</label>
@@ -3139,7 +3149,7 @@ window.showWorkerPaymentModal = function(workerId) {
                     </div>
                     <div class="form-group" style="margin-bottom:1rem;">
                         <label style="font-weight:700; color:#1e293b; margin-bottom:0.5rem; display:block;">Tip / Bonus Amount</label>
-                        <input type="number" id="w-tip-amount" class="form-control" placeholder="Rs" style="width:100%; padding:1rem; font-size:1.2rem; border-radius:12px;">
+                        <input type="number" id="w-tip-amount" class="form-control" placeholder="${cur()}" style="width:100%; padding:1rem; font-size:1.2rem; border-radius:12px;">
                     </div>
                     <div class="form-group" style="margin-bottom:1.5rem;">
                         <label style="font-weight:700; color:#1e293b; margin-bottom:0.5rem; display:block;">Reason (Optional)</label>
@@ -3179,7 +3189,7 @@ window.processWorkerPayment = async function(workerId, type, netSalary = 0, adva
     if(!db.workerAdvances) db.workerAdvances = {};
 
     if(type === 'salary') {
-        const confirmed = await showConfirm('Confirm Salary Process', `Pay Rs ${netSalary.toLocaleString()} as net salary? (Rs ${advanceDeducted.toLocaleString()} will be cleared from advance).`, {icon:"✅"});
+        const confirmed = await showConfirm('Confirm Salary Process', `Pay ${cur()} ${netSalary.toLocaleString()} as net salary? (${cur()} ${advanceDeducted.toLocaleString()} will be cleared from advance).`, {icon:"✅"});
         if(!confirmed) return;
         
         // Deduct advance
@@ -3203,7 +3213,7 @@ window.processWorkerPayment = async function(workerId, type, netSalary = 0, adva
         const reason = document.getElementById('w-adv-reason').value.trim();
         if(!amt || amt <= 0) return showToast('Enter valid amount', 'error');
         
-        const confirmed = await showConfirm('Confirm Advance', `Give Rs ${amt.toLocaleString()} advance to ${worker.name}?`, {icon:"⚠️"});
+        const confirmed = await showConfirm('Confirm Advance', `Give ${cur()} ${amt.toLocaleString()} advance to ${worker.name}?`, {icon:"⚠️"});
         if(!confirmed) return;
         
         db.workerAdvances[worker.id] = (db.workerAdvances[worker.id] || 0) + amt;
@@ -3222,7 +3232,7 @@ window.processWorkerPayment = async function(workerId, type, netSalary = 0, adva
         const reason = document.getElementById('w-tip-reason').value.trim();
         if(!amt || amt <= 0) return showToast('Enter valid amount', 'error');
         
-        const confirmed = await showConfirm('Confirm Tip / Bonus', `Give Rs ${amt.toLocaleString()} tip/bonus to ${worker.name}?`, {icon:"💰"});
+        const confirmed = await showConfirm('Confirm Tip / Bonus', `Give ${cur()} ${amt.toLocaleString()} tip/bonus to ${worker.name}?`, {icon:"💰"});
         if(!confirmed) return;
         
         addExpense({
@@ -3807,13 +3817,15 @@ function finishOnboarding() {
 // --- Cart totals with tax ---
 function cartTotals() {
     const db = getDB();
+    // NOTE: item.price already reflects any per-item discount, so subtotal IS
+    // the post-discount base. `discount` below is display-only ("you saved").
     const subtotal = state.cart.reduce((s, i) => s + (i.price * i.quantity), 0);
     const discount = state.cart.reduce((s, item) => {
         if (item.original_price && item.price < item.original_price) return s + ((item.original_price - item.price) * item.quantity);
         return s;
     }, 0);
     const taxRate = parseFloat(db.settings.tax_rate) || 0;
-    const taxable = Math.max(0, subtotal - discount);
+    const taxable = subtotal;
     const tax = taxable * taxRate / 100;
     return { subtotal, discount, taxRate, tax, total: taxable + tax, currency: db.settings.currency || 'Rs' };
 }
@@ -4397,9 +4409,21 @@ window.renderCustomerStatement = function(customerId) {
 
     let rows = [];
     sales.forEach(x => rows.push({
-        date: x.created_at, desc: 'Invoice ' + (x.invoice_no || ('#' + x.id)) + ' — ' + (x.items || []).length + ' item(s) (' + (x.payment_method || 'Cash') + ')',
+        date: x.created_at, desc: 'Invoice ' + (x.invoice_no || ('#' + x.id)) + ' — ' + (x.items || []).length + ' item(s)',
         debit: x.total_amount || 0, credit: 0
     }));
+    // Sales paid in full at checkout (Cash, Card, Bank, wallets) carry a matching
+    // credit so they do not appear outstanding. Sales linked to a khata record
+    // are credit sales — their payments arrive via the khata record below.
+    sales.forEach(x => {
+        const onKhata = khata.some(k => k.sale_id && String(k.sale_id) === String(x.id));
+        if (!onKhata && (x.total_amount || 0) > 0) {
+            rows.push({
+                date: x.created_at, desc: 'Payment received — ' + (x.payment_method || 'Cash'),
+                debit: 0, credit: x.total_amount || 0
+            });
+        }
+    });
     khata.forEach(k => {
         if ((k.total_amount || 0) > 0 && !k.sale_id) rows.push({ date: k.created_at, desc: 'Khata: ' + (k.description || k.type || ''), debit: k.total_amount || 0, credit: 0 });
         (k.payments || []).forEach(p => rows.push({ date: p.date, desc: 'Payment received' + (p.note ? ' — ' + p.note : ''), debit: 0, credit: p.amount || 0 }));

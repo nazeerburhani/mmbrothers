@@ -140,7 +140,7 @@ window.renderAttarInventory = function() {
             <table><thead><tr><th>Product</th><th>Price/ML</th><th>Cost/ML</th><th>Total ML</th><th>Used</th><th>Available</th><th>Actions</th></tr></thead>
             <tbody>${attars.map(a => {
                 const avail = Math.max(0, a.total_ml - (a.used_ml || 0));
-                return `<tr><td style="font-weight:700;">${a.name}</td><td>Rs ${a.price_per_ml}</td><td>Rs ${a.cost_per_ml || 0}</td>
+                return `<tr><td style="font-weight:700;">${a.name}</td><td>${cur()} ${a.price_per_ml}</td><td>${cur()} ${a.cost_per_ml || 0}</td>
                 <td>${a.total_ml}ml</td><td>${a.used_ml || 0}ml</td>
                 <td style="font-weight:700;color:${avail < 50 ? 'var(--danger)' : 'var(--success)'};">${avail}ml</td>
                 <td>
@@ -172,8 +172,8 @@ window.showAttarModal = function(attar) {
             <input type="hidden" id="attar-id" value="${attar ? attar.id : ''}">
             <div class="form-group" style="margin-bottom:1rem;"><label style="font-weight:700;display:block;margin-bottom:0.5rem;">Product Name</label><input type="text" id="attar-name" class="form-control" required value="${attar ? attar.name : ''}" style="width:100%;padding:0.8rem;border-radius:10px;border:1px solid #e2e8f0;"></div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
-                <div class="form-group"><label style="font-weight:700;display:block;margin-bottom:0.5rem;">Price per ML (Rs)</label><input type="number" id="attar-price-ml" class="form-control" required value="${attar ? attar.price_per_ml : ''}" style="width:100%;padding:0.8rem;border-radius:10px;border:1px solid #e2e8f0;"></div>
-                <div class="form-group"><label style="font-weight:700;display:block;margin-bottom:0.5rem;">Cost per ML (Rs)</label><input type="number" id="attar-cost-ml" class="form-control" required value="${attar ? attar.cost_per_ml || '' : ''}" style="width:100%;padding:0.8rem;border-radius:10px;border:1px solid #e2e8f0;"></div>
+                <div class="form-group"><label style="font-weight:700;display:block;margin-bottom:0.5rem;">Price per ML (${cur()})</label><input type="number" id="attar-price-ml" class="form-control" required value="${attar ? attar.price_per_ml : ''}" style="width:100%;padding:0.8rem;border-radius:10px;border:1px solid #e2e8f0;"></div>
+                <div class="form-group"><label style="font-weight:700;display:block;margin-bottom:0.5rem;">Cost per ML (${cur()})</label><input type="number" id="attar-cost-ml" class="form-control" required value="${attar ? attar.cost_per_ml || '' : ''}" style="width:100%;padding:0.8rem;border-radius:10px;border:1px solid #e2e8f0;"></div>
             </div>
             <div class="form-group" style="margin-bottom:1.5rem;"><label style="font-weight:700;display:block;margin-bottom:0.5rem;">Total Stock (ML)</label><input type="number" id="attar-total-ml" class="form-control" required value="${attar ? attar.total_ml : ''}" style="width:100%;padding:0.8rem;border-radius:10px;border:1px solid #e2e8f0;"></div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
